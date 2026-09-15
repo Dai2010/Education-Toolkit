@@ -35,6 +35,7 @@ let updateWindow;
 let tray;
 let isQuitting = false;
 let compactMode = false;
+let startInCompactMode = false;
 let stateSaveTimer;
 let timerEngine;
 let latestUpdateInfo;
@@ -1767,6 +1768,10 @@ function createWindow() {
     mainWindow.center();
     mainWindow.show();
     applyWindowSettings();
+    if (startInCompactMode) {
+      setWindowCompactMode(mainWindow, true);
+      mainWindow.webContents.send('window:compact-state', true);
+    }
   });
   mainWindow.webContents.once('did-finish-load', () => {
     mainWindow?.webContents.send('state:changed', getStateSnapshot());
@@ -1988,6 +1993,7 @@ module.exports = {
     startTimerEngine();
   },
   show: requestOrCreateFullUi,
+  compact() { startInCompactMode = true; requestOrCreateFullUi(); },
   hide() { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close(); },
   settings: createSettingsWindow,
   tools: createToolsWindow,

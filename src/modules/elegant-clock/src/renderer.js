@@ -302,7 +302,7 @@ function bindCompactClockInteractions() {
     compactUi.pointerId = null;
 
     if (!compactUi.moved) {
-      exitCompactMode();
+      shell?.openToolkit?.();
     }
   });
 

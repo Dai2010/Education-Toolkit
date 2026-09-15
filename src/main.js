@@ -191,7 +191,7 @@ app.whenReady().then(async () => {
     setAutostart: (enabled) => { setAutostart(enabled); return { supported: true, enabled: Boolean(enabled) }; },
     getScheduleState: () => state.schedule
   });
-  elegantClock.show();
+  elegantClock.compact();
   mainWindow.hide();
   if (state.settings.homeworkWidgetEnabled) createWidget();
   reminderTimer = setInterval(reminderTick, 1000);
