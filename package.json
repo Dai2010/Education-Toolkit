@@ -1,6 +1,6 @@
 {
   "name": "education-toolkit",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "一个面向学校、教学场景的工具包",
   "main": "src/main.js",
   "author": "Dai2010",
