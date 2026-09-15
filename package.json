@@ -18,10 +18,21 @@
     "appId": "io.github.dai2010.educationtoolkit",
     "productName": "Education Toolkit",
     "asar": true,
-    "files": ["src/**/*", "assets-lofi-beats.mp3", "LICENSE", "package.json"],
+    "files": [
+      "src/**/*",
+      "assets-lofi-beats.mp3",
+      "LICENSE",
+      "package.json",
+      "assets/icons/**/*",
+      "build/icon.png",
+      "build/icon.ico"
+    ],
     "icon": "build/icon.png",
     "win": {
-      "target": ["nsis", "msi"],
+      "target": [
+        "nsis",
+        "msi"
+      ],
       "artifactName": "Education-Toolkit-${version}-${arch}.${ext}"
     },
     "nsis": {

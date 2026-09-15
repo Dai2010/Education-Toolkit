@@ -1,16 +1,34 @@
 # Education Toolkit
 
-一个面向学校、教学场景的工具包。
+一个面向学校、教学场景的工具包，使用 Electron 构建，GPL-3.0 授权。
 
-Education Toolkit 使用 Electron 提供统一桌面界面，包含随机抽人、桌面时钟、作业布置、课表、名单、提醒、铃声和设置与帮助。桌面时钟可启动 [elegant-clock](https://github.com/Dai2010/elegant-clock)，随机抽人可启动 [rollcall](https://github.com/Dai2010/rollcall)。作业提醒默认使用 FileGator 中的 `lofi-beats.mp3`，用户可以在设置页选择其它音频文件。
+## 功能
 
-## 开发
+- **随机抽人**：RollCall 逻辑内嵌在主窗口，名单可在设置中创建或导入 JSON。
+- **桌面时钟**：Elegant Clock 直接嵌入并保持原有居中时钟、倒计时与设置；时钟下方同步显示课表状态和下一节课。
+- **作业布置**：添加、编辑、删除作业，支持精确时间或按课表设置上课前/后提醒。提醒使用系统通知，不播放铃声。
+- **设置与关于**：主题色（默认 `#8888CC`）、铃声路径、开机自启动、全局更新、名单、课表和 Markdown 帮助。
+
+作业桌面状态默认关闭。开启后右侧显示可拖动的小方块，点击可展开或收缩；展开状态由用户控制，不会自动收缩。
+
+## 课表格式
+
+```json
+[
+  {"subject":"数学","course":"数学","start":"08:00","duration":40,"breakDuration":10}
+]
+```
+
+教师按科目统一设置，可留空或填写“未公开”。
+
+## 开发与构建
 
 ```bash
 npm install
-npm start
+npm test
+npm run dist
 ```
 
-## 许可证
+Windows 构建同时生成 `.exe`（NSIS）和 `.msi` 安装包，安装器及仓库均采用 GPL-3.0。
 
-本项目及安装器使用 GNU General Public License v3.0，详见 [LICENSE](LICENSE)。
+不会创建？联系作者以获取帮助！（QQ:3361619396邮箱:dschuaweimate20@outlook.com或3361619396@qq.com）

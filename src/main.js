@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, Notification, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, Notification, shell, screen } = require('electron');
 const { existsSync, promises: fs } = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
@@ -12,8 +12,10 @@ const defaultState = {
     homeworkWidgetEnabled: false,
     homeworkWidgetExpanded: false,
     autostart: false,
-    selectedNameList: '默认名单'
-    ,subjectTeachers: {}
+    selectedNameList: '默认名单',
+    subjectTeachers: {},
+    homeworkWidgetX: null,
+    homeworkWidgetY: null
   },
   names: [{ name: '示例同学', group: '默认' }],
   nameLists: [{ name: '默认名单', names: [{ name: '示例同学', group: '默认' }] }],
@@ -88,6 +90,11 @@ function createWidget() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
   widgetWindow.loadFile(path.join(__dirname, 'widget.html'));
+  const display = screen.getPrimaryDisplay().workArea;
+  const width = state.settings.homeworkWidgetExpanded ? 310 : 54;
+  const x = Number.isFinite(state.settings.homeworkWidgetX) ? state.settings.homeworkWidgetX : display.x + display.width - width - 24;
+  const y = Number.isFinite(state.settings.homeworkWidgetY) ? state.settings.homeworkWidgetY : display.y + 120;
+  widgetWindow.setPosition(Math.max(display.x, x), Math.max(display.y, y));
   widgetWindow.on('closed', () => { widgetWindow = undefined; });
 }
 
@@ -140,12 +147,19 @@ function registerIpc() {
     await saveState();
     if (state.settings.homeworkWidgetEnabled) createWidget(); else closeWidget();
     sendState();
+    elegantClock.sync?.();
     return state;
   });
   ipcMain.handle('pick-ringtone', async () => {
     const result = await dialog.showOpenDialog(mainWindow, { title: '选择提醒铃声', properties: ['openFile'], filters: [{ name: '音频文件', extensions: ['mp3', 'wav', 'ogg', 'm4a'] }] });
     return result.canceled ? null : result.filePaths[0];
   });
+  ipcMain.handle('import-markdown', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, { title: '导入 Markdown', properties: ['openFile'], filters: [{ name: 'Markdown 文件', extensions: ['md', 'markdown'] }] });
+    if (result.canceled) return null;
+    return fs.readFile(result.filePaths[0], 'utf8');
+  });
+  ipcMain.handle('check-for-updates', async () => { await shell.openExternal('https://github.com/Dai2010/Education-Toolkit/releases/latest'); return { ok: true }; });
   ipcMain.handle('import-json', async () => {
     const result = await dialog.showOpenDialog(mainWindow, { title: '导入 JSON', properties: ['openFile'], filters: [{ name: 'JSON 文件', extensions: ['json'] }] });
     if (result.canceled) return null;
@@ -165,6 +179,7 @@ function registerIpc() {
     return list[Math.floor(Math.random() * list.length)];
   });
   ipcMain.handle('toggle-homework-widget', async (_event, expanded) => { resizeHomeworkWidget(expanded); await saveState(); sendState(); return state.settings.homeworkWidgetExpanded; });
+  ipcMain.handle('move-homework-widget', async (_event, x, y) => { if (!widgetWindow || widgetWindow.isDestroyed()) return false; widgetWindow.setPosition(Math.round(x), Math.round(y)); const [nextX, nextY] = widgetWindow.getPosition(); state.settings.homeworkWidgetX = nextX; state.settings.homeworkWidgetY = nextY; await saveState(); return true; });
 }
 
 function launchExternal(project, command) {
