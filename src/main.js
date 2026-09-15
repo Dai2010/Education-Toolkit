@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog, ipcMain, Notification, shell, screen } = req
 const { promises: fs } = require('node:fs');
 const path = require('node:path');
 const elegantClock = require('./modules/elegant-clock/src/main.js');
+const scheduleTools = require('./schedule.js');
 
 const defaultState = {
   settings: {
@@ -37,6 +38,13 @@ function normalizeState(value) {
   next.settings.subjectTeachers = { ...(value?.settings?.subjectTeachers || {}) };
   next.assignments = Array.isArray(next.assignments) ? next.assignments : [];
   next.schedule = Array.isArray(next.schedule) ? next.schedule : [];
+  try {
+    const normalizedSchedule = scheduleTools.normalize({ schedule: next.schedule, subjectTeachers: next.settings.subjectTeachers });
+    next.schedule = normalizedSchedule.schedule;
+    next.settings.subjectTeachers = normalizedSchedule.subjectTeachers;
+  } catch {
+    next.schedule = [];
+  }
   next.nameLists = Array.isArray(next.nameLists) && next.nameLists.length ? next.nameLists : structuredClone(defaultState.nameLists);
   next.names = Array.isArray(next.names) ? next.names : next.nameLists[0].names;
   return next;

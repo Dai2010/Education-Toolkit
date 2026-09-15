@@ -6,6 +6,7 @@ const headerTime = document.querySelector('#header-time');
 const toast = document.querySelector('#toast');
 
 const subjects = ['数学', '语文', '英语', '物理', '化学', '生物', '历史', '政治', '地理', '其它'];
+const scheduleSubjects = [...subjects, '体育', '艺术', '信息技术', '通用技术', '活动课', '自习', '午练', '听力', '班会', '校本选修'];
 const viewTitles = { home: '首页', random: '随机抽人', clock: '桌面时钟', assignments: '作业布置', settings: '设置与关于' };
 let state;
 let currentView = 'home';
@@ -52,22 +53,8 @@ function randomView() {
 }
 
 function scheduleSummary() {
-  const schedule = [...state.schedule].sort((a, b) => String(a.start).localeCompare(String(b.start)));
-  const now = new Date(); const minutes = now.getHours() * 60 + now.getMinutes();
-  const next = schedule.find((item) => { const [h, m] = String(item.start).split(':').map(Number); return h * 60 + m > minutes; });
-  const first = schedule[0];
-  const active = schedule.find((item) => {
-    const [h, m] = String(item.start).split(':').map(Number);
-    const start = h * 60 + m;
-    return minutes >= start && minutes < start + Number(item.duration || 40);
-  });
-  if (active) return { label: '上课中', item: active };
-  if (next && active === undefined && schedule.some((item) => {
-    const [h, m] = String(item.start).split(':').map(Number);
-    return h * 60 + m + Number(item.duration || 40) <= minutes;
-  })) return { label: '课间', item: next };
-  if (!next && schedule.length) return { label: '放学状态', item: null };
-  return { label: '下一节课', item: next || first };
+  const result = ToolkitSchedule.summary(state.schedule);
+  return { label: result.label === '未上课' ? '下一节课' : result.label, item: result.item };
 }
 
 function clockView() {
@@ -95,7 +82,7 @@ function namesSection() {
 
 function scheduleSection() {
   const item = state.schedule.find((lesson) => lesson.id === editingScheduleId) || {};
-  return `<div class="setting-section ${settingsTab === 'schedule' ? 'active' : ''}" data-section="schedule"><div class="panel-title"><div><h2>课表管理</h2><p>老师按科目统一设置，老师姓名可以留空。</p></div><button class="help-link" data-help="schedule">帮助</button></div><form id="schedule-form"><div class="form-grid"><div class="form-field"><label>科目 *</label><select name="subject" required>${subjects.map((subject) => `<option value="${subject}" ${item.subject === subject ? 'selected' : ''}>${subject}</option>`).join('')}</select></div><div class="form-field"><label>课程名 *</label><input name="course" required value="${esc(item.course)}" /></div><div class="form-field"><label>任课老师（可留空）</label><input name="teacher" value="${esc(state.settings.subjectTeachers?.[item.subject] || '')}" placeholder="可不填写" /></div><div class="form-field"><label>开始时间 *</label><input name="start" type="time" required value="${esc(item.start)}" /></div><div class="form-field"><label>课程时长（分钟）</label><input name="duration" type="number" min="1" value="${Number(item.duration || 40)}" /></div><div class="form-field"><label>课间时长（分钟）</label><input name="breakDuration" type="number" min="0" value="${Number(item.breakDuration ?? 10)}" /></div></div><div class="actions"><button class="btn btn-secondary" type="button" data-action="import-schedule">导入 JSON</button>${editingScheduleId ? '<button class="btn btn-ghost" type="button" data-action="cancel-schedule">取消编辑</button>' : ''}<button class="btn btn-primary" type="submit">${editingScheduleId ? '保存课程' : '添加课程'}</button></div></form><div class="item-list" style="margin-top:18px">${[...state.schedule].sort((a, b) => String(a.start).localeCompare(String(b.start))).map((lesson) => `<div class="list-item"><div><h3>${esc(lesson.start)} · ${esc(lesson.course)}</h3><p>${esc(lesson.subject || '其它')} · ${esc(state.settings.subjectTeachers?.[lesson.subject] || '未设置老师')} · ${Number(lesson.duration || 40)} 分钟 · 课间 ${Number(lesson.breakDuration ?? 10)} 分钟</p></div><div class="inline-actions"><button class="btn btn-ghost" data-edit-schedule="${esc(lesson.id)}">编辑</button><button class="btn btn-danger" data-delete-schedule="${esc(lesson.id)}">删除</button></div></div>`).join('') || '<div class="empty">暂无课程。</div>'}</div></div>`;
+  return `<div class="setting-section ${settingsTab === 'schedule' ? 'active' : ''}" data-section="schedule"><div class="panel-title"><div><h2>课表管理</h2><p>老师按科目统一设置，老师姓名可以留空。</p></div><button class="help-link" data-help="schedule">帮助</button></div><form id="schedule-form"><div class="form-grid"><div class="form-field"><label>科目 *</label><select name="subject" required>${scheduleSubjects.map((subject) => `<option value="${subject}" ${item.subject === subject ? 'selected' : ''}>${subject}</option>`).join('')}</select></div><div class="form-field"><label>课程名 *</label><input name="course" required value="${esc(item.course)}" /></div><div class="form-field"><label>星期（可选）</label><select name="weekday"><option value="">每天</option>${['一', '二', '三', '四', '五', '六', '日'].map((day, index) => `<option value="${index + 1}" ${Number(item.weekday) === index + 1 ? 'selected' : ''}>星期${day}</option>`).join('')}</select></div><div class="form-field"><label>任课老师（可留空）</label><input name="teacher" value="${esc(state.settings.subjectTeachers?.[item.subject] || '')}" placeholder="可不填写" /></div><div class="form-field"><label>开始时间 *</label><input name="start" type="time" required value="${esc(item.start)}" /></div><div class="form-field"><label>课程时长（分钟）</label><input name="duration" type="number" min="1" value="${Number(item.duration ?? 40)}" /></div><div class="form-field"><label>课间时长（分钟）</label><input name="breakDuration" type="number" min="0" value="${Number(item.breakDuration ?? 10)}" /></div></div><div class="actions"><button class="btn btn-secondary" type="button" data-action="import-schedule">导入 JSON</button>${editingScheduleId ? '<button class="btn btn-ghost" type="button" data-action="cancel-schedule">取消编辑</button>' : ''}<button class="btn btn-primary" type="submit">${editingScheduleId ? '保存课程' : '添加课程'}</button></div></form><div class="item-list" style="margin-top:18px">${[...state.schedule].sort((a, b) => String(a.start).localeCompare(String(b.start))).map((lesson) => `<div class="list-item"><div><h3>${esc(lesson.start)} · ${esc(lesson.course)}</h3><p>${lesson.weekday ? `星期${['一', '二', '三', '四', '五', '六', '日'][lesson.weekday - 1]} · ` : ''}${esc(lesson.subject || '其它')} · ${esc(state.settings.subjectTeachers?.[lesson.subject] || '未设置老师')} · ${Number(lesson.duration ?? 40)} 分钟 · 课间 ${Number(lesson.breakDuration ?? 10)} 分钟</p></div><div class="inline-actions"><button class="btn btn-ghost" data-edit-schedule="${esc(lesson.id)}">编辑</button><button class="btn btn-danger" data-delete-schedule="${esc(lesson.id)}">删除</button></div></div>`).join('') || '<div class="empty">暂无课程。</div>'}</div></div>`;
 }
 
 function helpView() {
@@ -150,15 +137,15 @@ function bindView() {
 async function onAssignmentSubmit(event) {
   event.preventDefault(); const form = new FormData(event.target); const name = String(form.get('name') || '').trim(); if (!name) return;
   const lesson = state.schedule.find((item) => item.id === form.get('lessonId')); let dueAt = form.get('dueAt') ? new Date(form.get('dueAt')).toISOString() : '';
-  if (!dueAt && lesson) { const today = new Date(); const [hour, minute] = lesson.start.split(':').map(Number); today.setHours(hour, minute, 0, 0); if (form.get('relation') === 'after') today.setMinutes(today.getMinutes() + Number(lesson.duration || 40)); dueAt = today.toISOString(); }
+  if (!dueAt && lesson) dueAt = ToolkitSchedule.nextDue(lesson, form.get('relation'));
   const payload = { id: editingAssignmentId === 'new' ? uid() : editingAssignmentId, name, subject: form.get('subject'), dueAt, relation: form.get('relation'), lessonId: form.get('lessonId'), lessonLabel: lesson ? `${lesson.start} ${lesson.course}` : '', completed: false, remindedAt: '' };
   const index = state.assignments.findIndex((item) => item.id === editingAssignmentId); if (index >= 0) payload.completed = state.assignments[index].completed; if (index >= 0) state.assignments[index] = payload; else state.assignments.push(payload); editingAssignmentId = null; await save(); showToast('作业已保存');
 }
 
 async function onNameSubmit(event) { event.preventDefault(); const form = new FormData(event.target); const name = String(form.get('name') || '').trim(); if (!name) return; state.names.push({ name, group: String(form.get('group') || '').trim() }); state.nameLists[0].names = state.names; await save(); event.target.reset(); showToast('名单已添加'); }
 async function importNames() { try { const data = await api.importJson(); if (!data) return; const names = Array.isArray(data) ? data : data.names; if (!Array.isArray(names)) throw new Error('名单 JSON 应为数组或包含 names 数组'); state.names = names.map((item) => typeof item === 'string' ? { name: item, group: '' } : { name: item.name, group: item.group || '' }).filter((item) => item.name); state.nameLists[0].names = state.names; await save(); showToast(`已导入 ${state.names.length} 人`); } catch (error) { showToast(`导入失败：${error.message}`); } }
-async function onScheduleSubmit(event) { event.preventDefault(); const form = new FormData(event.target); const subject = String(form.get('subject') || '其它'); const teacher = String(form.get('teacher') || '').trim(); state.settings.subjectTeachers[subject] = teacher; const payload = { id: editingScheduleId || uid(), subject, course: String(form.get('course') || '').trim(), start: form.get('start'), duration: Number(form.get('duration')) || 40, breakDuration: Number(form.get('breakDuration')) || 10 }; const index = state.schedule.findIndex((item) => item.id === editingScheduleId); if (index >= 0) state.schedule[index] = payload; else state.schedule.push(payload); editingScheduleId = null; await save(); showToast('课程已保存'); }
-async function importSchedule() { try { const data = await api.importJson(); if (!data) return; const lessons = Array.isArray(data) ? data : data.schedule; if (!Array.isArray(lessons)) throw new Error('课表 JSON 应为数组或包含 schedule 数组'); state.schedule = lessons.map((item) => ({ id: item.id || uid(), course: item.course || item.name || '', subject: item.subject || item.course || '其它', start: item.start || item.time || '', duration: Number(item.duration) || 40, breakDuration: Number(item.breakDuration) || 10 })).filter((item) => item.course && item.start); await save(); showToast(`已导入 ${state.schedule.length} 节课`); } catch (error) { showToast(`导入失败：${error.message}`); } }
+async function onScheduleSubmit(event) { event.preventDefault(); const form = new FormData(event.target); const subject = String(form.get('subject') || '其它'); const teacher = String(form.get('teacher') || '').trim(); state.settings.subjectTeachers[subject] = teacher; const weekday = form.get('weekday') ? Number(form.get('weekday')) : undefined; const payload = { id: editingScheduleId || uid(), subject, course: String(form.get('course') || '').trim(), start: form.get('start'), duration: Number(form.get('duration')) || 40, breakDuration: form.get('breakDuration') === '' ? 10 : Number(form.get('breakDuration')), ...(weekday ? { weekday } : {}) }; const index = state.schedule.findIndex((item) => item.id === editingScheduleId); if (index >= 0) state.schedule[index] = payload; else state.schedule.push(payload); editingScheduleId = null; await save(); showToast('课程已保存'); }
+async function importSchedule() { try { const data = await api.importJson(); if (!data) return; const normalized = ToolkitSchedule.normalize(data); state.schedule = normalized.schedule; state.settings.subjectTeachers = { ...state.settings.subjectTeachers, ...normalized.subjectTeachers }; await save(); showToast(`已导入 ${state.schedule.length} 节课`); } catch (error) { showToast(`导入失败：${error.message}`); } }
 
 function markdownToHtml(markdown) { return String(markdown || '').split(/\r?\n/).map((line) => { const escaped = esc(line); if (escaped.startsWith('### ')) return `<h3>${escaped.slice(4)}</h3>`; if (escaped.startsWith('## ')) return `<h2>${escaped.slice(3)}</h2>`; if (escaped.startsWith('# ')) return `<h1>${escaped.slice(2)}</h1>`; if (/^- /.test(escaped)) return `<li>${escaped.slice(2)}</li>`; return escaped ? `<p>${escaped}</p>` : ''; }).join(''); }
 
