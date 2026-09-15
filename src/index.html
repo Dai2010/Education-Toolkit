@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' file: blob:; img-src 'self' data: file:;" />
+    <title>Education Toolkit</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">ET</span><div><strong>Education</strong><span>Toolkit</span></div></div>
+        <nav class="main-nav" aria-label="主导航">
+          <button class="nav-item active" data-view="home"><span>⌂</span>首页</button>
+          <button class="nav-item" data-view="random"><span>✦</span>随机抽人</button>
+          <button class="nav-item" data-view="clock"><span>◷</span>桌面时钟</button>
+          <button class="nav-item" data-view="assignments"><span>✓</span>作业布置</button>
+          <button class="nav-item" data-view="settings"><span>⚙</span>设置与关于</button>
+        </nav>
+        <div class="sidebar-footer"><span class="status-dot"></span><span>本地数据已保存</span></div>
+      </aside>
+      <main class="content">
+        <header class="topbar"><div class="breadcrumb"><button id="back-btn" class="back-btn" type="button" title="返回上一页" aria-label="返回上一页">←</button><span id="page-title">首页</span></div><time id="header-time"></time></header>
+        <div id="app" class="view-container"></div>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="renderer.js"></script>
+  </body>
+</html>

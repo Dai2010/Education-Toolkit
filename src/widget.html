@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>Education Toolkit</title>
+    <style>
+      :root { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; color: #fff; background: #252542; }
+      body { margin: 0; padding: 18px 20px; -webkit-app-region: drag; }
+      .top { display: flex; justify-content: space-between; color: #c9c7ea; font-size: 12px; }
+      .time { margin: 7px 0 15px; font-size: 43px; font-weight: 300; letter-spacing: 1px; }
+      .next { border-top: 1px solid rgba(255,255,255,.16); padding-top: 13px; }
+      .label { color: #b6b3e7; font-size: 11px; }.course { margin-top: 6px; font-size: 18px; font-weight: 700; }.meta { margin-top: 4px; color: #cac8db; font-size: 12px; }
+      .close { position: absolute; right: 12px; top: 9px; -webkit-app-region: no-drag; border: 0; color: #c9c7ea; background: transparent; font-size: 17px; cursor: pointer; }
+    </style>
+  </head>
+  <body><button class="close" id="close" title="关闭桌面功能">×</button><div class="top"><span id="date">--</span><span>Education Toolkit</span></div><div class="time" id="time">--:--:--</div><div class="next"><div class="label">下一节课</div><div id="course" class="course">暂无课程</div><div id="meta" class="meta">请在课表中添加课程</div></div><script src="widget.js"></script></body>
+</html>

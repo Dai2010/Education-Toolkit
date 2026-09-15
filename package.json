@@ -1,0 +1,39 @@
+{
+  "name": "education-toolkit",
+  "version": "0.1.0",
+  "description": "一个面向学校、教学场景的工具包",
+  "main": "src/main.js",
+  "author": "Dai2010",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.3.1",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "io.github.dai2010.educationtoolkit",
+    "productName": "Education Toolkit",
+    "asar": true,
+    "files": ["src/**/*", "assets-lofi-beats.mp3", "LICENSE", "package.json"],
+    "win": {
+      "target": ["nsis", "msi"],
+      "artifactName": "Education-Toolkit-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Education Toolkit",
+      "license": "LICENSE"
+    },
+    "msi": {
+      "perMachine": false
+    }
+  }
+}
