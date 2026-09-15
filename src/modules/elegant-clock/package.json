@@ -1,0 +1,125 @@
+{
+  "name": "elegant-clock",
+  "version": "1.2.1",
+  "description": "A cross-platform customizable desktop clock with countdown, target-date timer, stopwatch, pomodoro, reminders, and date display.",
+  "main": "src/main.js",
+  "author": "Dai2010",
+  "license": "GPL-3.0-only",
+  "private": false,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:linux": "electron-builder --linux --x64 --publish never",
+    "package:arch": "bash scripts/build-arch-package.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "electron": "^33.3.1",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "io.github.dai2010.elegantclock",
+    "productName": "Elegant Clock",
+    "copyright": "Copyright © 2026 Dai2010",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "README.md",
+      "LICENSE",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "src",
+        "to": "watchdog",
+        "filter": [
+          "watchdog.js",
+          "watchdog-monitor.js"
+        ]
+      },
+      {
+        "from": "build/icon.png",
+        "to": "assets/icon.png"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "assets/icon.ico"
+      },
+      {
+        "from": "src/assets/audio",
+        "to": "assets/audio",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "msiwrapped",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Elegant-Clock-${version}-Windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "include": "build/installer.nsh",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Elegant Clock"
+    },
+    "msiWrapped": {
+      "wrappedInstallerArgs": "",
+      "artifactName": "Elegant-Clock-${version}-Windows-${arch}.${ext}"
+    },
+    "linux": {
+      "icon": "build/icons",
+      "target": [
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "maintainer": "Dai2010",
+      "synopsis": "Transparent desktop clock",
+      "description": "Elegant Clock provides a customizable desktop clock, date display, duration countdown, target-date countdown, stopwatch, pomodoro, reminders, and selectable alarm sounds.",
+      "artifactName": "Elegant-Clock-${version}-Linux-${arch}.${ext}"
+    },
+    "deb": {
+      "afterInstall": "build/linux/after-install.sh",
+      "afterRemove": "build/linux/after-remove.sh"
+    },
+    "rpm": {
+      "afterInstall": "build/linux/after-install.sh",
+      "afterRemove": "build/linux/after-remove.sh"
+    }
+  }
+}

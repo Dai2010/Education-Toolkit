@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' file: blob:;" />
+    <title>Elegant Clock 功能</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="opaque utility-window">
+    <main class="utility-shell tools-shell">
+      <header class="utility-header">
+        <button id="tool-back" class="back-button" type="button" hidden>← 返回</button>
+        <div>
+          <p class="eyebrow">Elegant Clock</p>
+          <h1 id="tools-title">功能</h1>
+        </div>
+        <span id="tools-status" class="status-text">选择一个功能</span>
+      </header>
+
+      <section id="tools-menu" class="tool-menu-grid" aria-label="功能菜单">
+        <button class="tool-menu-item" type="button" data-tool="pomodoro">
+          <strong>番茄钟</strong>
+          <span id="pomodoro-menu-status">专注 / 休息循环</span>
+        </button>
+        <button class="tool-menu-item" type="button" data-tool="countdown">
+          <strong>倒计时</strong>
+          <span id="countdown-menu-status">按时长或指定日期</span>
+        </button>
+        <button class="tool-menu-item" type="button" data-tool="stopwatch">
+          <strong>正计时</strong>
+          <span id="stopwatch-menu-status">累计经过时间</span>
+        </button>
+        <button class="tool-menu-item" type="button" data-tool="reminders">
+          <strong>提醒</strong>
+          <span id="reminder-menu-status">系统通知提醒</span>
+        </button>
+      </section>
+
+      <section id="pomodoro-panel" class="tool-card utility-card tool-view" data-tool-view="pomodoro" hidden>
+        <div class="card-body padded-card">
+          <div class="pomodoro-summary">
+            <span id="pomodoro-phase" class="pill">专注</span>
+            <span id="pomodoro-cycle" class="status-text">已完成 0 个番茄</span>
+            <span id="pomodoro-status" class="status-text">待开始</span>
+          </div>
+
+          <div class="input-grid four-cols">
+            <label>
+              专注分钟
+              <input id="pomodoro-focus-input" type="number" min="1" max="180" step="1" value="25" />
+            </label>
+            <label>
+              短休息
+              <input id="pomodoro-short-input" type="number" min="1" max="60" step="1" value="5" />
+            </label>
+            <label>
+              长休息
+              <input id="pomodoro-long-input" type="number" min="1" max="120" step="1" value="15" />
+            </label>
+            <label>
+              长休间隔
+              <input id="pomodoro-long-every-input" type="number" min="1" max="12" step="1" value="4" />
+            </label>
+          </div>
+
+          <output id="pomodoro-display" class="timer-display">25:00</output>
+          <div class="button-row four-buttons">
+            <button id="pomodoro-start" type="button">开始</button>
+            <button id="pomodoro-pause" type="button">暂停</button>
+            <button id="pomodoro-skip" type="button">跳过</button>
+            <button id="pomodoro-reset" type="button">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="countdown-panel" class="tool-card utility-card tool-view" data-tool-view="countdown" hidden>
+        <div class="card-body padded-card">
+          <div class="mode-row" role="radiogroup" aria-label="倒计时模式">
+            <label>
+              <input type="radio" name="countdown-mode" value="duration" checked />
+              时长
+            </label>
+            <label>
+              <input type="radio" name="countdown-mode" value="target" />
+              指定日期
+            </label>
+            <span id="countdown-status" class="status-text">待开始</span>
+          </div>
+
+          <div id="duration-fields" class="input-grid three-cols">
+            <label>
+              小时
+              <input id="hours-input" type="number" min="0" max="999" step="1" value="0" />
+            </label>
+            <label>
+              分钟
+              <input id="minutes-input" type="number" min="0" max="59" step="1" value="5" />
+            </label>
+            <label>
+              秒
+              <input id="seconds-input" type="number" min="0" max="59" step="1" value="0" />
+            </label>
+          </div>
+
+          <div id="target-fields" class="input-grid" hidden>
+            <label>
+              目标日期时间
+              <input id="target-input" type="datetime-local" />
+            </label>
+            <div class="input-grid two-cols">
+              <label>
+                提前通知
+                <input id="target-notify-before-input" type="number" min="0" max="87600" step="1" value="0" />
+              </label>
+              <label>
+                单位
+                <select id="target-notify-before-unit">
+                  <option value="hours">小时</option>
+                  <option value="days">天</option>
+                </select>
+              </label>
+            </div>
+            <p class="settings-hint">设置为 0 表示不提前通知；指定日期倒计时只调用系统通知，不播放铃声。</p>
+          </div>
+
+          <output id="countdown-display" class="timer-display">00:05:00</output>
+          <div class="button-row">
+            <button id="countdown-start" type="button">开始</button>
+            <button id="countdown-pause" type="button">暂停</button>
+            <button id="countdown-reset" type="button">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="stopwatch-panel" class="tool-card utility-card tool-view" data-tool-view="stopwatch" hidden>
+        <div class="card-body padded-card">
+          <span id="stopwatch-status" class="status-text">待开始</span>
+          <output id="stopwatch-display" class="timer-display">00:00:00.0</output>
+          <div class="button-row">
+            <button id="stopwatch-start" type="button">开始</button>
+            <button id="stopwatch-pause" type="button">暂停</button>
+            <button id="stopwatch-reset" type="button">重置</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="reminders-panel" class="tool-card utility-card tool-view" data-tool-view="reminders" hidden>
+        <div class="card-body padded-card">
+          <span id="reminder-status" class="status-text">暂无提醒</span>
+          <div class="input-grid">
+            <label>
+              标题
+              <input id="reminder-title-input" type="text" maxlength="60" placeholder="例如：开会、喝水、休息" />
+            </label>
+            <label>
+              提醒时间
+              <input id="reminder-time-input" type="datetime-local" />
+            </label>
+            <label>
+              备注
+              <textarea id="reminder-note-input" maxlength="200" rows="2" placeholder="可选：补充提醒内容"></textarea>
+            </label>
+          </div>
+
+          <div class="button-row">
+            <button id="reminder-add" type="button">添加提醒</button>
+            <button id="reminder-clear-done" type="button">清除已提醒</button>
+          </div>
+          <ul id="reminder-list" class="reminder-list" aria-live="polite"></ul>
+        </div>
+      </section>
+    </main>
+
+    <script src="tools.js"></script>
+  </body>
+</html>

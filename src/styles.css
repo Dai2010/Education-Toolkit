@@ -32,7 +32,7 @@ button { cursor: pointer; }
 .module-card, .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 8px 26px rgba(45, 42, 83, .045); }
 .module-card { min-height: 190px; padding: 24px; text-align: left; position: relative; overflow: hidden; transition: .18s ease; }
 .module-card:hover { transform: translateY(-2px); border-color: #c8c8e7; box-shadow: 0 12px 34px rgba(45, 42, 83, .1); }
-.module-card .module-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--primary-soft); color: var(--primary-dark); font-size: 23px; margin-bottom: 19px; }
+.module-card .module-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: var(--primary-soft); color: var(--primary-dark); font-size: 23px; margin-bottom: 19px; }.module-card .module-icon img { width: 48px; height: 48px; display: block; }
 .module-card h2 { margin: 0 0 7px; font-size: 20px; }
 .module-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; max-width: 400px; }
 .module-card .arrow { position: absolute; right: 24px; bottom: 23px; color: var(--primary-dark); font-size: 20px; }

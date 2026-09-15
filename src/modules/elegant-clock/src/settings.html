@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' file: blob:;" />
+    <title>Elegant Clock 设置</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="opaque utility-window">
+    <main class="utility-shell settings-shell">
+      <header class="utility-header">
+        <div>
+          <p class="eyebrow">Elegant Clock</p>
+          <h1>设置</h1>
+        </div>
+        <span id="appearance-status" class="status-text">可自定义</span>
+      </header>
+
+      <div class="settings-modules">
+        <section class="settings-module" aria-labelledby="window-settings-heading">
+          <header class="settings-module-header">
+            <h2 id="window-settings-heading">窗口行为</h2>
+          </header>
+          <div class="settings-panel settings-switch-grid">
+            <label class="switch-row">
+              <input id="transparent-toggle" type="checkbox" />
+              <span>透明显示</span>
+            </label>
+            <label class="switch-row">
+              <input id="always-top-toggle" type="checkbox" />
+              <span>窗口置顶</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-module" aria-labelledby="appearance-settings-heading">
+          <header class="settings-module-header">
+            <h2 id="appearance-settings-heading">时钟外观</h2>
+          </header>
+          <div class="input-grid two-cols">
+            <label>
+              透明度
+              <span class="range-row">
+                <input id="opacity-input" type="range" min="20" max="100" step="1" value="78" />
+                <span id="opacity-value" class="value-chip">78%</span>
+              </span>
+            </label>
+            <label>
+              时钟字体大小
+              <span class="range-row">
+                <input id="font-size-input" type="range" min="48" max="160" step="1" value="82" />
+                <span id="font-size-value" class="value-chip">82px</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="input-grid">
+            <label>
+              字体
+              <input id="font-family-input" type="text" list="font-presets" placeholder="系统默认" />
+              <datalist id="font-presets">
+                <option value="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"></option>
+                <option value="Microsoft YaHei, Segoe UI, sans-serif"></option>
+                <option value="Noto Sans CJK SC, Noto Sans, sans-serif"></option>
+                <option value="Arial, Helvetica, sans-serif"></option>
+                <option value="Georgia, serif"></option>
+                <option value="Consolas, Cascadia Mono, monospace"></option>
+              </datalist>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-module" aria-labelledby="color-settings-heading">
+          <header class="settings-module-header">
+            <h2 id="color-settings-heading">颜色</h2>
+          </header>
+          <div class="input-grid two-cols color-settings-grid">
+            <label>
+              字体颜色
+              <input id="font-color-input" type="color" value="#f8fbff" />
+            </label>
+            <div class="color-field">
+              <label for="background-color-hex-input">背景颜色</label>
+              <div class="color-input-row">
+                <input id="background-color-input" type="color" value="#101623" aria-label="选择背景颜色" />
+                <input
+                  id="background-color-hex-input"
+                  class="hex-color-input"
+                  type="text"
+                  value="#101623"
+                  maxlength="7"
+                  spellcheck="false"
+                  autocomplete="off"
+                  aria-describedby="background-color-error"
+                />
+              </div>
+              <span id="background-color-error" class="field-message" hidden>请输入 #RRGGBB 格式</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-module" aria-labelledby="ringtone-settings-heading">
+          <header class="settings-module-header">
+            <h2 id="ringtone-settings-heading">铃声</h2>
+          </header>
+          <div class="input-grid">
+            <label>
+              当前铃声
+              <span id="ringtone-label" class="readonly-field">默认：ringtone_default.mp3</span>
+            </label>
+            <div class="settings-field">
+              <span>铃声操作</span>
+              <span class="mini-button-row ringtone-actions">
+                <button id="ringtone-choose" type="button">选择</button>
+                <button id="ringtone-test" type="button">试听</button>
+                <button id="ringtone-stop" type="button" disabled>停止</button>
+                <button id="ringtone-default" type="button">默认</button>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-module" aria-labelledby="system-settings-heading">
+          <header class="settings-module-header">
+            <h2 id="system-settings-heading">启动与更新</h2>
+          </header>
+          <label class="switch-row autostart-row">
+            <input id="autostart-toggle" type="checkbox" />
+            <span>开机自启动</span>
+          </label>
+          <p id="autostart-status" class="settings-hint">正在读取自启动状态…</p>
+
+          <div class="settings-action-row update-settings-row">
+            <div>
+              <strong>软件更新</strong>
+              <p>
+                <span id="current-version">当前版本 v--</span>
+                <span aria-hidden="true"> · </span>
+                <span id="update-check-status" aria-live="polite">尚未手动检查</span>
+              </p>
+            </div>
+            <button id="update-check-button" type="button">检查更新</button>
+          </div>
+        </section>
+
+        <section class="settings-module" aria-labelledby="about-settings-heading">
+          <header class="settings-module-header">
+            <h2 id="about-settings-heading">关于</h2>
+          </header>
+          <div class="settings-action-row about-settings-row">
+            <div>
+              <strong>Elegant Clock</strong>
+              <p>作者、项目主页与开源协议</p>
+            </div>
+            <button id="about-open" type="button">打开关于</button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="settings.js"></script>
+  </body>
+</html>

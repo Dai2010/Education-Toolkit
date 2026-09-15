@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('educationToolkit', {
   setAutostart: (enabled) => ipcRenderer.invoke('set-autostart', enabled),
   launchClock: () => ipcRenderer.invoke('launch-clock'),
   launchRollcall: () => ipcRenderer.invoke('launch-rollcall'),
+  openToolkit: () => ipcRenderer.invoke('open-toolkit'),
+  randomDraw: (people) => ipcRenderer.invoke('random-draw', people),
+  toggleHomeworkWidget: (expanded) => ipcRenderer.invoke('toggle-homework-widget', Boolean(expanded)),
   onStateUpdated: (callback) => ipcRenderer.on('state-updated', (_event, value) => callback(value)),
   onReminderDue: (callback) => ipcRenderer.on('reminder-due', (_event, value) => callback(value))
 });

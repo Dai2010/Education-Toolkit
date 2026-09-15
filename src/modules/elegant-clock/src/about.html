@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+    <title>关于 Elegant Clock</title>
+    <link rel="stylesheet" href="about.css" />
+  </head>
+  <body>
+    <main class="about-shell">
+      <section class="hero-card">
+        <div class="brand-mark">◷</div>
+        <div>
+          <p class="eyebrow">关于</p>
+          <h1 id="app-name">Elegant Clock</h1>
+          <p id="version-label" class="muted">v--</p>
+        </div>
+      </section>
+
+      <section class="info-card" aria-label="项目信息">
+        <dl>
+          <div>
+            <dt>作者 GitHub 主页</dt>
+            <dd><button id="profile-link" class="link-button" type="button">https://github.com/Dai2010</button></dd>
+          </div>
+          <div>
+            <dt>项目主页</dt>
+            <dd><button id="project-link" class="link-button" type="button">https://github.com/Dai2010/elegant-clock</button></dd>
+          </div>
+          <div>
+            <dt>许可证</dt>
+            <dd id="license-label">GPL-3.0-only</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="license-card" aria-label="许可证说明">
+        <h2>协议</h2>
+        <p>本项目以 <strong id="license-inline">GPL-3.0-only</strong> 许可证发布。完整协议文本随源码和安装包内的 <code>LICENSE</code> 文件一起提供。</p>
+      </section>
+    </main>
+
+    <script src="about.js"></script>
+  </body>
+</html>

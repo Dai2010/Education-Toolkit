@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;" />
+    <title>Elegant Clock 更新</title>
+    <link rel="stylesheet" href="update.css" />
+  </head>
+  <body>
+    <main class="update-shell">
+      <header class="update-header">
+        <span class="update-mark" aria-hidden="true">↑</span>
+        <div>
+          <p class="eyebrow">Elegant Clock 更新</p>
+          <h1>发现新版本</h1>
+          <p id="release-name" class="release-name">正在读取版本信息…</p>
+        </div>
+      </header>
+
+      <section class="version-comparison" aria-label="版本对比">
+        <div class="version-item">
+          <span>当前版本</span>
+          <strong id="current-version">v--</strong>
+        </div>
+        <span class="version-arrow" aria-hidden="true">→</span>
+        <div class="version-item latest-version">
+          <span>最新版本</span>
+          <strong id="latest-version">v--</strong>
+        </div>
+      </section>
+
+      <section class="release-section" aria-labelledby="release-heading">
+        <header class="release-heading-row">
+          <h2 id="release-heading">更新信息</h2>
+          <time id="published-at" hidden></time>
+        </header>
+        <pre id="release-notes" class="release-notes">正在读取更新信息…</pre>
+      </section>
+
+      <section id="download-status" class="download-status" aria-live="polite" hidden>
+        <div class="status-row">
+          <strong id="status-label">准备下载</strong>
+          <span id="status-value"></span>
+        </div>
+        <progress id="download-progress" max="100"></progress>
+      </section>
+
+      <footer class="update-actions">
+        <button id="later-button" class="secondary-button" type="button">稍后再说</button>
+        <button id="release-button" class="secondary-button" type="button">查看发布页</button>
+        <button id="proxy-update-button" class="secondary-button" type="button">代理更新</button>
+        <button id="direct-update-button" class="primary-button" type="button" autofocus>原地址更新</button>
+      </footer>
+    </main>
+
+    <script src="update.js"></script>
+  </body>
+</html>
