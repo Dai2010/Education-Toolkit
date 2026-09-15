@@ -53,10 +53,20 @@ function randomView() {
 function scheduleSummary() {
   const schedule = [...state.schedule].sort((a, b) => String(a.start).localeCompare(String(b.start)));
   const now = new Date(); const minutes = now.getHours() * 60 + now.getMinutes();
-  const current = schedule.find((item) => { const [h, m] = String(item.start).split(':').map(Number); return h * 60 + m > minutes; });
+  const next = schedule.find((item) => { const [h, m] = String(item.start).split(':').map(Number); return h * 60 + m > minutes; });
   const first = schedule[0];
-  if (!current && schedule.length) return { label: '今日课程已结束', item: null };
-  return { label: current ? '下一节课' : '课表预览', item: current || first };
+  const active = schedule.find((item) => {
+    const [h, m] = String(item.start).split(':').map(Number);
+    const start = h * 60 + m;
+    return minutes >= start && minutes < start + Number(item.duration || 40);
+  });
+  if (active) return { label: '上课中', item: active };
+  if (next && active === undefined && schedule.some((item) => {
+    const [h, m] = String(item.start).split(':').map(Number);
+    return h * 60 + m + Number(item.duration || 40) <= minutes;
+  })) return { label: '课间', item: next };
+  if (!next && schedule.length) return { label: '放学状态', item: null };
+  return { label: '下一节课', item: next || first };
 }
 
 function clockView() {
