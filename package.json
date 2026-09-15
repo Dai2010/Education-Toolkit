@@ -19,6 +19,7 @@
     "productName": "Education Toolkit",
     "asar": true,
     "files": ["src/**/*", "assets-lofi-beats.mp3", "LICENSE", "package.json"],
+    "icon": "build/icon.png",
     "win": {
       "target": ["nsis", "msi"],
       "artifactName": "Education-Toolkit-${version}-${arch}.${ext}"
