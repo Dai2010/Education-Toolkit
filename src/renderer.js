@@ -119,7 +119,6 @@ const views = { home: homeView, random: randomView, clock: clockView, assignment
 
 function bindView() {
   document.querySelectorAll('[data-go]').forEach((element) => element.addEventListener('click', () => navigate(element.dataset.go)));
-  document.querySelectorAll('[data-launch]').forEach((element) => element.addEventListener('click', async () => { const result = await (element.dataset.launch === 'clock' ? api.launchClock() : api.launchRollcall()); showToast(result.ok ? '已启动外部工具' : result.message); }));
   document.querySelectorAll('[data-settings-tab]').forEach((element) => element.addEventListener('click', () => { settingsTab = element.dataset.settingsTab; render(); if (settingsTab === 'general') api.getAutostartStatus().then((status) => { const copy = document.querySelector('#autostart-copy'); if (copy) copy.textContent = status ? '系统当前已开启' : '系统当前未开启'; }); }));
   document.querySelectorAll('[data-help]').forEach((element) => element.addEventListener('click', () => { helpTopic = element.dataset.help; settingsTab = 'help'; navigate('settings'); }));
   document.querySelectorAll('[data-help-topic]').forEach((element) => element.addEventListener('click', () => { helpTopic = element.dataset.helpTopic; render(); }));

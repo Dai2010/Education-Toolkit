@@ -1,7 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, Notification, shell, screen } = require('electron');
-const { existsSync, promises: fs } = require('node:fs');
+const { promises: fs } = require('node:fs');
 const path = require('node:path');
-const { spawn } = require('node:child_process');
 const elegantClock = require('./modules/elegant-clock/src/main.js');
 
 const defaultState = {
@@ -168,8 +167,6 @@ function registerIpc() {
   ipcMain.handle('get-autostart-status', () => app.getLoginItemSettings().openAtLogin);
   ipcMain.handle('set-autostart', async (_event, enabled) => { setAutostart(enabled); await saveState(); return app.getLoginItemSettings().openAtLogin; });
   ipcMain.handle('show-item-in-folder', (_event, filePath) => shell.showItemInFolder(filePath));
-  ipcMain.handle('launch-clock', () => launchExternal('elegant-clock', ['npm', 'start']));
-  ipcMain.handle('launch-rollcall', () => launchExternal('rollcall', ['java', '-jar', path.join('target', 'rollcall.jar')]));
   ipcMain.handle('open-toolkit', () => { mainWindow?.show(); mainWindow?.focus(); return true; });
   ipcMain.handle('toolkit:open', () => { mainWindow?.show(); mainWindow?.focus(); return true; });
   ipcMain.handle('toolkit:get-schedule-state', () => state.schedule);
@@ -182,13 +179,6 @@ function registerIpc() {
   ipcMain.handle('move-homework-widget', async (_event, x, y) => { if (!widgetWindow || widgetWindow.isDestroyed()) return false; widgetWindow.setPosition(Math.round(x), Math.round(y)); const [nextX, nextY] = widgetWindow.getPosition(); state.settings.homeworkWidgetX = nextX; state.settings.homeworkWidgetY = nextY; await saveState(); return true; });
 }
 
-function launchExternal(project, command) {
-  const cwd = path.join(__dirname, '..', '..', project);
-  if (!existsSync(cwd)) return { ok: false, message: `未找到 ${project} 项目` };
-  const child = spawn(command[0], command.slice(1), { cwd, detached: true, stdio: 'ignore', shell: process.platform === 'win32' });
-  child.unref();
-  return { ok: true };
-}
 
 app.whenReady().then(async () => {
   await loadState();
