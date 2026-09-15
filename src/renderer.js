@@ -109,7 +109,7 @@ function helpView() {
     settings: ['设置与更新', '<p>常规设置包含主题色、默认音频路径、全局更新和开机自启动。主题色默认是 <code>#8888CC</code>。</p><p>帮助文件支持导入 Markdown；导入内容只在当前帮助页预览。</p>']
   };
   const [titleText, content] = topics[helpTopic] || topics.overview;
-  return `<div class="setting-section ${settingsTab === 'help' ? 'active' : ''}" data-section="help"><div class="panel-title"><div><h2>模块帮助</h2><p>选择一个模块查看对应说明。</p></div></div><div class="help-tabs">${Object.entries(topics).map(([key, value]) => `<button class="btn ${helpTopic === key ? 'btn-primary' : 'btn-ghost'}" data-help-topic="${key}">${value[0]}</button>`).join('')}</div><div class="panel help-copy"><h2>${titleText}</h2>${content}${helpTopic === 'overview' ? '<div class="actions"><button class="btn btn-secondary" data-action="import-markdown">导入 Markdown 帮助</button></div><div id="markdown-preview"></div>' : ''}</div></div>`;
+  return `<div class="setting-section ${settingsTab === 'help' ? 'active' : ''}" data-section="help"><div class="panel-title"><div><h2>模块帮助</h2><p>从左侧选择模块查看对应说明。</p></div></div><div class="help-layout"><nav class="help-nav">${Object.entries(topics).map(([key, value]) => `<button class="help-nav-item ${helpTopic === key ? 'active' : ''}" data-help-topic="${key}">${value[0]}</button>`).join('')}</nav><div class="panel help-copy"><h2>${titleText}</h2>${content}${helpTopic === 'overview' ? '<div class="actions"><button class="btn btn-secondary" data-action="import-markdown">导入 Markdown 帮助</button></div><div id="markdown-preview"></div>' : ''}</div></div></div>`;
 }
 
 function settingsView() {
