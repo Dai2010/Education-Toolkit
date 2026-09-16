@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('educationToolkit', {
+  openClockSettings: () => ipcRenderer.invoke('toolkit:clock-settings'),
+  openClockTools: () => ipcRenderer.invoke('toolkit:clock-tools'),
+  onNavigate: (callback) => ipcRenderer.on('toolkit:navigate', (_event, view) => callback(view)),
   getState: () => ipcRenderer.invoke('get-state'),
   saveState: (state) => ipcRenderer.invoke('save-state', state),
   pickRingtone: () => ipcRenderer.invoke('pick-ringtone'),

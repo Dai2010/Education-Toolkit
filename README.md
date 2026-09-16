@@ -14,12 +14,17 @@
 ## 课表格式
 
 ```json
-[
-  {"subject":"数学","course":"数学","start":"08:00","duration":40,"breakDuration":10}
-]
+{
+  "version": 1,
+  "mode": "summer",
+  "subjectTeachers": {"数学": "可留空"},
+  "schedule": [
+    {"weekday": 1, "id": "mon-1", "subject": "数学", "course": "数学", "start": "08:00", "duration": 40, "breakDuration": 10}
+  ]
+}
 ```
 
-教师按科目统一设置，可留空或填写“未公开”。
+教师按科目统一设置；老师信息可留空。导入时会校验时间格式、课程时长、课间时长、重复 ID 和同日时间重叠。课表按星期 1 至 7 区分，周末也支持自习安排。
 
 ## 开发与构建
 

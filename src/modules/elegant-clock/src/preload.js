@@ -88,4 +88,6 @@ contextBridge.exposeInMainWorld('elegantClock', {
   platform: process.platform
   ,openToolkit: () => ipcRenderer.invoke('toolkit:open')
   ,getScheduleState: () => ipcRenderer.invoke('toolkit:get-schedule-state')
+  ,onScheduleChanged: (callback) => ipcRenderer.on('toolkit:schedule', (_event, value) => callback(value))
+  ,onCompactState: (callback) => ipcRenderer.on('window:compact-state', (_event, value) => callback(value))
 });

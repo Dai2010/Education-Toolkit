@@ -1766,11 +1766,14 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.center();
-    mainWindow.show();
     applyWindowSettings();
-    if (startInCompactMode) {
+    if (host?.startHidden) {
+      mainWindow.hide();
+    } else if (startInCompactMode) {
       setWindowCompactMode(mainWindow, true);
       mainWindow.webContents.send('window:compact-state', true);
+    } else {
+      mainWindow.show();
     }
   });
   mainWindow.webContents.once('did-finish-load', () => {
@@ -1991,6 +1994,8 @@ module.exports = {
     host = services;
     loadAppState();
     startTimerEngine();
+    createTray();
+    startWatchdogProcess();
   },
   show: requestOrCreateFullUi,
   compact() { startInCompactMode = true; requestOrCreateFullUi(); },

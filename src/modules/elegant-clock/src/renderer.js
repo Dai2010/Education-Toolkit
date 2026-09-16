@@ -106,6 +106,7 @@ function renderState(state) {
 
 function updateClock() {
   const now = new Date();
+  renderNextClass(now);
   elements.currentDate.textContent = dateFormatter.format(now);
   elements.currentTime.textContent = timeFormatter.format(now);
 
@@ -121,16 +122,20 @@ function updateClock() {
   }
 }
 
+let toolkitLessons = [];
+function renderNextClass(now = new Date()) {
+  const result = ToolkitSchedule.summary(toolkitLessons, now);
+  const parts = [result.label];
+  if (result.label === '上课中') parts.push(result.item.course);
+  if (result.next) parts.push(`下一节 ${result.next.course} ${result.next.start}`);
+  elements.nextClass.hidden = false;
+  elements.nextClass.textContent = parts.join(' · ');
+}
 async function updateNextClass() {
-  const lessons = await shell?.getScheduleState?.() || [];
-  const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  const sorted = [...lessons].sort((a, b) => String(a.start).localeCompare(String(b.start)));
-  const active = sorted.find((item) => { const [h, m] = String(item.start).split(':').map(Number); return minutes >= h * 60 + m && minutes < h * 60 + m + Number(item.duration || 40); });
-  const next = sorted.find((item) => { const [h, m] = String(item.start).split(':').map(Number); return h * 60 + m > minutes; });
-  const item = active || next;
-  elements.nextClass.hidden = !item;
-  elements.nextClass.textContent = item ? `${active ? '上课中' : '下一节'} · ${item.course} · ${item.start}` : '放学状态';
+  try {
+    toolkitLessons = await shell?.getScheduleState?.() || [];
+    renderNextClass();
+  } catch { elements.nextClass.textContent = '课表暂不可用'; }
 }
 
 function scheduleClockUpdate() {
@@ -196,7 +201,7 @@ function applyCompactUiState(enabled) {
   document.body.classList.toggle('compact-mode', enabled);
   elements.clockPanel.setAttribute(
     'aria-label',
-    enabled ? '紧凑时钟，点击恢复完整窗口，拖动可移动位置' : '当前时间'
+    enabled ? '紧凑时钟，点击打开工具包时钟页，拖动可移动位置' : '当前时间'
   );
 }
 
@@ -325,6 +330,8 @@ function bindEvents() {
   shell?.onRestoreFullUi?.(() => {
     exitCompactMode();
   });
+  shell?.onCompactState?.(applyCompactUiState);
+  shell?.onScheduleChanged?.((lessons) => { toolkitLessons = lessons || []; renderNextClass(); });
   shell?.onStateChanged?.(renderState);
   shell?.onPlayAlert?.(playAlertTone);
 

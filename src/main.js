@@ -3,6 +3,7 @@ const { promises: fs } = require('node:fs');
 const path = require('node:path');
 const elegantClock = require('./modules/elegant-clock/src/main.js');
 const scheduleTools = require('./schedule.js');
+const autostart = require('./autostart.js')(app);
 
 const defaultState = {
   settings: {
@@ -38,12 +39,10 @@ function normalizeState(value) {
   next.settings.subjectTeachers = { ...(value?.settings?.subjectTeachers || {}) };
   next.assignments = Array.isArray(next.assignments) ? next.assignments : [];
   next.schedule = Array.isArray(next.schedule) ? next.schedule : [];
-  try {
+  {
     const normalizedSchedule = scheduleTools.normalize({ schedule: next.schedule, subjectTeachers: next.settings.subjectTeachers });
     next.schedule = normalizedSchedule.schedule;
     next.settings.subjectTeachers = normalizedSchedule.subjectTeachers;
-  } catch {
-    next.schedule = [];
   }
   next.nameLists = Array.isArray(next.nameLists) && next.nameLists.length ? next.nameLists : structuredClone(defaultState.nameLists);
   next.names = Array.isArray(next.names) ? next.names : next.nameLists[0].names;
@@ -70,6 +69,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 640,
     backgroundColor: '#f8f7fc',
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -77,6 +77,7 @@ function createWindow() {
     }
   });
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.on('close', (event) => { if (!app.isQuitting) { event.preventDefault(); mainWindow.hide(); } });
 }
 
 function sendState() {
@@ -116,8 +117,7 @@ function resizeHomeworkWidget(expanded) {
   const bounds = widgetWindow.getBounds();
   const width = expanded ? 310 : 54;
   const height = expanded ? 190 : 54;
-  widgetWindow.setSize(width, height);
-  widgetWindow.setPosition(Math.max(0, bounds.x + bounds.width - width), bounds.y);
+  widgetWindow.setBounds({ x: Math.max(0, bounds.x + bounds.width - width), y: bounds.y, width, height }, false);
 }
 
 function playReminder(assignment) {
@@ -143,8 +143,7 @@ function reminderTick() {
 }
 
 function setAutostart(enabled) {
-  app.setLoginItemSettings({ openAtLogin: Boolean(enabled), path: process.execPath, args: ['--autostart'] });
-  state.settings.autostart = Boolean(enabled);
+  state.settings.autostart = autostart.set(enabled);
 }
 
 function registerIpc() {
@@ -172,18 +171,20 @@ function registerIpc() {
     if (result.canceled) return null;
     return JSON.parse(await fs.readFile(result.filePaths[0], 'utf8'));
   });
-  ipcMain.handle('get-autostart-status', () => app.getLoginItemSettings().openAtLogin);
-  ipcMain.handle('set-autostart', async (_event, enabled) => { setAutostart(enabled); await saveState(); return app.getLoginItemSettings().openAtLogin; });
+  ipcMain.handle('get-autostart-status', () => autostart.get());
+  ipcMain.handle('set-autostart', async (_event, enabled) => { setAutostart(enabled); await saveState(); return autostart.get(); });
   ipcMain.handle('show-item-in-folder', (_event, filePath) => shell.showItemInFolder(filePath));
   ipcMain.handle('open-toolkit', () => { mainWindow?.show(); mainWindow?.focus(); return true; });
-  ipcMain.handle('toolkit:open', () => { mainWindow?.show(); mainWindow?.focus(); return true; });
+  ipcMain.handle('toolkit:open', () => { mainWindow?.webContents.send('toolkit:navigate', 'clock'); mainWindow?.show(); mainWindow?.focus(); return true; });
+  ipcMain.handle('toolkit:clock-settings', () => { elegantClock.settings(); return true; });
+  ipcMain.handle('toolkit:clock-tools', () => { elegantClock.tools(); return true; });
   ipcMain.handle('toolkit:get-schedule-state', () => state.schedule);
   ipcMain.handle('random-draw', (_event, people) => {
     const list = Array.isArray(people) ? people.filter((person) => person?.name) : [];
     if (!list.length) return null;
     return list[Math.floor(Math.random() * list.length)];
   });
-  ipcMain.handle('toggle-homework-widget', async (_event, expanded) => { resizeHomeworkWidget(expanded); await saveState(); sendState(); return state.settings.homeworkWidgetExpanded; });
+  ipcMain.handle('toggle-homework-widget', async (_event, expanded) => { resizeHomeworkWidget(expanded); await saveState(); resizeHomeworkWidget(expanded); sendState(); return state.settings.homeworkWidgetExpanded; });
   ipcMain.handle('move-homework-widget', async (_event, x, y) => { if (!widgetWindow || widgetWindow.isDestroyed()) return false; widgetWindow.setPosition(Math.round(x), Math.round(y)); const [nextX, nextY] = widgetWindow.getPosition(); state.settings.homeworkWidgetX = nextX; state.settings.homeworkWidgetY = nextY; await saveState(); return true; });
 }
 
@@ -193,14 +194,15 @@ app.whenReady().then(async () => {
   registerIpc();
   createWindow();
   elegantClock.initialize({
-    iconPath: path.join(__dirname, '..', 'elegant-clock', 'build', 'icon.png'),
+    iconPath: path.join(__dirname, '..', 'build', 'icon.png'),
     ringtonePath: () => state.settings.ringtonePath || path.join(__dirname, '..', 'assets-lofi-beats.mp3'),
-    getAutostartInfo: () => ({ supported: true, enabled: app.getLoginItemSettings().openAtLogin }),
-    setAutostart: (enabled) => { setAutostart(enabled); return { supported: true, enabled: Boolean(enabled) }; },
-    getScheduleState: () => state.schedule
+    getAutostartInfo: () => ({ supported: true, enabled: autostart.get() }),
+    setAutostart: (enabled) => { setAutostart(enabled); return { supported: true, enabled: autostart.get() }; },
+    getScheduleState: () => state.schedule,
+    startHidden: true
   });
-  elegantClock.compact();
-  mainWindow.hide();
+  elegantClock.show();
+  mainWindow.once('ready-to-show', () => { mainWindow.show(); mainWindow.webContents.send('toolkit:navigate', 'clock'); });
   if (state.settings.homeworkWidgetEnabled) createWidget();
   reminderTimer = setInterval(reminderTick, 1000);
   reminderTick();
@@ -211,4 +213,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => clearInterval(reminderTimer));
+app.on('before-quit', () => { app.isQuitting = true; clearInterval(reminderTimer); });

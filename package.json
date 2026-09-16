@@ -1,6 +1,6 @@
 {
   "name": "education-toolkit",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "一个面向学校、教学场景的工具包",
   "main": "src/main.js",
   "author": "Dai2010",
@@ -8,7 +8,8 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.js",
-    "dist": "electron-builder --win --x64 --publish never"
+    "dist": "electron-builder --win --x64 --publish never",
+    "test:ui": "electron test/electron-smoke.cjs"
   },
   "devDependencies": {
     "electron": "^33.3.1",
@@ -46,6 +47,16 @@
     },
     "msi": {
       "perMachine": false
-    }
+    },
+    "extraResources": [
+      {
+        "from": "src/modules/elegant-clock/src",
+        "to": "watchdog",
+        "filter": [
+          "watchdog.js",
+          "watchdog-monitor.js"
+        ]
+      }
+    ]
   }
 }
