@@ -62,8 +62,9 @@ function scheduleSummary() {
 function clockSummaryMarkup() {
   const result = ToolkitSchedule.summary(state.schedule);
   const current = result.label === '上课中' ? result.item : null;
-  const next = result.next;
-  return `<span class="state-label">${esc(result.label)}</span>${current ? `<h2>${esc(current.course)}</h2>${state.settings.subjectTeachers?.[current.subject] ? `<p>${esc(state.settings.subjectTeachers[current.subject])}</p>` : ''}` : ''}${next ? `<p>下一节：${esc(next.course)} · ${esc(next.start)}</p>` : '<p>今天没有更多课程。</p>'}`;
+  const next = result.label === '课间' ? result.next : null;
+  const teacher = current ? (state.settings.subjectTeachers?.[current.subject] || '') : '';
+  return `<span class="state-label">${esc(result.label)}</span>${current ? `<h2>${esc(current.course)}</h2>${teacher ? `<p>${esc(teacher)}</p>` : ''}` : ''}${next ? `<p>下一节：${esc(next.course)}<br><small>${esc(state.settings.subjectTeachers?.[next.subject] || '')} · ${esc(next.start)}</small></p>` : (!current && result.label !== '课间' ? '<p>下一节课程将在课间显示。</p>' : '')}`;
 }
 
 function clockView() {

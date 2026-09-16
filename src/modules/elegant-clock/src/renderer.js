@@ -123,11 +123,21 @@ function updateClock() {
 }
 
 let toolkitLessons = [];
+function toolkitTeacher(subject) {
+  const lesson = toolkitLessons.find((item) => item.subject === subject);
+  return lesson?.teacher || '';
+}
 function renderNextClass(now = new Date()) {
   const result = ToolkitSchedule.summary(toolkitLessons, now);
   const parts = [result.label];
-  if (result.label === '上课中') parts.push(result.item.course);
-  if (result.next) parts.push(`下一节 ${result.next.course} ${result.next.start}`);
+  if (result.label === '上课中' && result.item) {
+    const teacher = toolkitTeacher(result.item.subject);
+    parts.push(teacher ? `${result.item.course}\n${teacher}` : result.item.course);
+  }
+  if (result.label === '课间' && result.next) {
+    const teacher = toolkitTeacher(result.next.subject);
+    parts.push(teacher ? `下一节 ${result.next.course}\n${teacher} · ${result.next.start}` : `下一节 ${result.next.course} · ${result.next.start}`);
+  }
   elements.nextClass.hidden = false;
   elements.nextClass.textContent = parts.join(' · ');
 }
