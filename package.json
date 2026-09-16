@@ -7,7 +7,7 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/*.test.js",
+    "test": "node --test test/autostart.test.js test/schedule.test.js",
     "dist": "electron-builder --win --x64 --publish never",
     "test:ui": "electron test/electron-smoke.cjs"
   },
