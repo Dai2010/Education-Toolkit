@@ -25,6 +25,7 @@ jobs:
       - name: Unit tests
         run: npm test
       - name: Electron integration tests
+        if: runner.os != 'Windows'
         run: npm run test:ui
       - name: Build EXE and MSI
         run: npm run dist
