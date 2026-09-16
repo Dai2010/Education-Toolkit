@@ -199,6 +199,8 @@ app.whenReady().then(async () => {
     getAutostartInfo: () => ({ supported: true, enabled: autostart.get() }),
     setAutostart: (enabled) => { setAutostart(enabled); return { supported: true, enabled: autostart.get() }; },
     getScheduleState: () => state.schedule,
+    getSubjectTeachers: () => state.settings.subjectTeachers,
+    getThemeColor: () => state.settings.themeColor,
     startHidden: true
   });
   elegantClock.show();

@@ -123,9 +123,9 @@ function updateClock() {
 }
 
 let toolkitLessons = [];
+let toolkitSubjectTeachers = {};
 function toolkitTeacher(subject) {
-  const lesson = toolkitLessons.find((item) => item.subject === subject);
-  return lesson?.teacher || '';
+  return toolkitSubjectTeachers?.[subject] || '';
 }
 function renderNextClass(now = new Date()) {
   const result = ToolkitSchedule.summary(toolkitLessons, now);
@@ -341,7 +341,8 @@ function bindEvents() {
     exitCompactMode();
   });
   shell?.onCompactState?.(applyCompactUiState);
-  shell?.onScheduleChanged?.((lessons) => { toolkitLessons = lessons || []; renderNextClass(); });
+  shell?.onScheduleChanged?.((payload) => { toolkitLessons = payload?.schedule || payload || []; toolkitSubjectTeachers = payload?.subjectTeachers || {}; renderNextClass(); });
+  shell?.onThemeChanged?.((color) => { if (/^#[0-9a-f]{6}$/i.test(color || '')) document.documentElement.style.setProperty('--accent', color); });
   shell?.onStateChanged?.(renderState);
   shell?.onPlayAlert?.(playAlertTone);
 

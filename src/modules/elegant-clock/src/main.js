@@ -1778,7 +1778,8 @@ function createWindow() {
   });
   mainWindow.webContents.once('did-finish-load', () => {
     mainWindow?.webContents.send('state:changed', getStateSnapshot());
-    mainWindow?.webContents.send('toolkit:schedule', host?.getScheduleState());
+    mainWindow?.webContents.send('toolkit:schedule', { schedule: host?.getScheduleState?.() || [], subjectTeachers: host?.getSubjectTeachers?.() || {} });
+    mainWindow?.webContents.send('toolkit:theme', host?.getThemeColor?.());
   });
 
   mainWindow.on('close', (event) => {
@@ -2003,7 +2004,8 @@ module.exports = {
   settings: createSettingsWindow,
   tools: createToolsWindow,
   sync() {
-    mainWindow?.webContents.send('toolkit:schedule', host.getScheduleState());
+    mainWindow?.webContents.send('toolkit:schedule', { schedule: host.getScheduleState(), subjectTeachers: host.getSubjectTeachers?.() || {} });
+    mainWindow?.webContents.send('toolkit:theme', host.getThemeColor?.());
     updateSettings({ ringtone: createRingtonePayload(host.ringtonePath()) });
   }
 };
