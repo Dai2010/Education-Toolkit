@@ -353,13 +353,17 @@ function bindEvents() {
 async function init() {
   bindEvents();
   renderState(await shell?.getState?.());
-  applyCompactUiState(Boolean(await shell?.getCompactMode?.()));
+  const isCompact = Boolean(await shell?.getCompactMode?.());
+  applyCompactUiState(isCompact);
   scheduleClockUpdate();
   updateNextClass();
   window.setInterval(updateNextClass, 30_000);
 
-  if (!compactUi.active) {
-    scheduleIdleMode();
+  // 启动1秒后自动进入紧凑模式
+  if (!isCompact) {
+    setTimeout(() => {
+      enterCompactMode();
+    }, 1000);
   }
 }
 

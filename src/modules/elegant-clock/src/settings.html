@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' file: blob:;" />
-    <title>Elegant Clock 设置</title>
+    <title>桌面时钟设置</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="opaque utility-window">
     <main class="utility-shell settings-shell">
       <header class="utility-header">
         <div>
-          <p class="eyebrow">Elegant Clock</p>
+          <p class="eyebrow">桌面时钟</p>
           <h1>设置</h1>
         </div>
         <span id="appearance-status" class="status-text">可自定义</span>
@@ -123,25 +123,13 @@
 
         <section class="settings-module" aria-labelledby="system-settings-heading">
           <header class="settings-module-header">
-            <h2 id="system-settings-heading">启动与更新</h2>
+            <h2 id="system-settings-heading">启动设置</h2>
           </header>
           <label class="switch-row autostart-row">
             <input id="autostart-toggle" type="checkbox" />
             <span>开机自启动</span>
           </label>
           <p id="autostart-status" class="settings-hint">正在读取自启动状态…</p>
-
-          <div class="settings-action-row update-settings-row">
-            <div>
-              <strong>软件更新</strong>
-              <p>
-                <span id="current-version">当前版本 v--</span>
-                <span aria-hidden="true"> · </span>
-                <span id="update-check-status" aria-live="polite">尚未手动检查</span>
-              </p>
-            </div>
-            <button id="update-check-button" type="button">检查更新</button>
-          </div>
         </section>
 
         <section class="settings-module" aria-labelledby="about-settings-heading">
@@ -150,7 +138,7 @@
           </header>
           <div class="settings-action-row about-settings-row">
             <div>
-              <strong>Elegant Clock</strong>
+              <strong>桌面时钟</strong>
               <p>作者、项目主页与开源协议</p>
             </div>
             <button id="about-open" type="button">打开关于</button>

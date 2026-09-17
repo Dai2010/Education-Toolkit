@@ -16,12 +16,18 @@ const defaultState = {
     selectedNameList: '默认名单',
     subjectTeachers: {},
     homeworkWidgetX: null,
-    homeworkWidgetY: null
+    homeworkWidgetY: null,
+    drawMode: 'single',
+    drawGroupSize: 1,
+    drawGroupCount: 1,
+    drawContinuous: false,
+    drawResultFontSize: 30
   },
   names: [{ name: '示例同学', group: '默认' }],
   nameLists: [{ name: '默认名单', names: [{ name: '示例同学', group: '默认' }] }],
   schedule: [],
-  assignments: []
+  assignments: [],
+  drawnIds: []
 };
 
 let mainWindow;
@@ -39,6 +45,7 @@ function normalizeState(value) {
   next.settings.subjectTeachers = { ...(value?.settings?.subjectTeachers || {}) };
   next.assignments = Array.isArray(next.assignments) ? next.assignments : [];
   next.schedule = Array.isArray(next.schedule) ? next.schedule : [];
+  next.drawnIds = Array.isArray(next.drawnIds) ? next.drawnIds : [];
   {
     const normalizedSchedule = scheduleTools.normalize({ schedule: next.schedule, subjectTeachers: next.settings.subjectTeachers });
     next.schedule = normalizedSchedule.schedule;
@@ -100,9 +107,21 @@ function createWidget() {
   widgetWindow.loadFile(path.join(__dirname, 'widget.html'));
   const display = screen.getPrimaryDisplay().workArea;
   const width = state.settings.homeworkWidgetExpanded ? 310 : 54;
-  const x = Number.isFinite(state.settings.homeworkWidgetX) ? state.settings.homeworkWidgetX : display.x + display.width - width - 24;
-  const y = Number.isFinite(state.settings.homeworkWidgetY) ? state.settings.homeworkWidgetY : display.y + 120;
-  widgetWindow.setPosition(Math.max(display.x, x), Math.max(display.y, y));
+  const height = state.settings.homeworkWidgetExpanded ? 190 : 54;
+  const savedX = state.settings.homeworkWidgetX;
+  const savedY = state.settings.homeworkWidgetY;
+  
+  // 完整的边界保护：确保窗口不会移出屏幕任何边缘
+  const defaultX = display.x + display.width - width - 24;
+  const defaultY = display.y + 120;
+  const x = Number.isFinite(savedX) 
+    ? Math.max(display.x, Math.min(savedX, display.x + display.width - width))
+    : defaultX;
+  const y = Number.isFinite(savedY)
+    ? Math.max(display.y, Math.min(savedY, display.y + display.height - height))
+    : defaultY;
+  
+  widgetWindow.setPosition(x, y);
   widgetWindow.on('closed', () => { widgetWindow = undefined; });
 }
 
@@ -146,6 +165,83 @@ function setAutostart(enabled) {
   state.settings.autostart = autostart.set(enabled);
 }
 
+function drawSingle(list, continuous) {
+  const available = continuous 
+    ? list.filter((person, index) => !state.drawnIds.includes(index))
+    : list;
+
+  if (!available.length) {
+    if (continuous) {
+      return { error: '所有人都已被抽取，请重置后继续', shouldReset: true };
+    }
+    return { error: '名单为空' };
+  }
+
+  const selected = available[Math.floor(Math.random() * available.length)];
+  
+  if (continuous) {
+    const originalIndex = list.findIndex(p => p.name === selected.name && p.group === selected.group);
+    if (originalIndex !== -1) {
+      state.drawnIds.push(originalIndex);
+    }
+  }
+
+  return {
+    mode: 'single',
+    selected,
+    remaining: continuous ? list.length - state.drawnIds.length : list.length,
+    total: list.length
+  };
+}
+
+function drawGroups(list, groupSize, groupCount, continuous) {
+  if (groupSize <= 0) return { error: '每组人数必须大于 0' };
+  if (groupCount <= 0) return { error: '组数必须大于 0' };
+  if (groupSize > list.length) return { error: '每组人数不能超过名单总人数' };
+
+  const requested = groupSize * groupCount;
+  const available = continuous 
+    ? list.filter((_, index) => !state.drawnIds.includes(index))
+    : list;
+
+  if (continuous && requested > available.length) {
+    return { 
+      error: `连续抽取时剩余人数不足：需要 ${requested} 人，当前仅剩 ${available.length} 人`,
+      shouldReset: true
+    };
+  }
+
+  const groups = [];
+  const workingList = [...available];
+  
+  for (let i = 0; i < groupCount; i++) {
+    if (workingList.length < groupSize) break;
+    
+    const group = [];
+    for (let j = 0; j < groupSize; j++) {
+      const randomIndex = Math.floor(Math.random() * workingList.length);
+      const selected = workingList.splice(randomIndex, 1)[0];
+      group.push(selected);
+      
+      if (continuous) {
+        const originalIndex = list.findIndex(p => p.name === selected.name && p.group === selected.group);
+        if (originalIndex !== -1 && !state.drawnIds.includes(originalIndex)) {
+          state.drawnIds.push(originalIndex);
+        }
+      }
+    }
+    groups.push(group);
+  }
+
+  return {
+    mode: 'group',
+    groups,
+    remaining: continuous ? list.length - state.drawnIds.length : list.length,
+    total: list.length
+  };
+}
+
+
 function registerIpc() {
   ipcMain.handle('get-state', () => state);
   ipcMain.handle('save-state', async (_event, next) => {
@@ -179,13 +275,55 @@ function registerIpc() {
   ipcMain.handle('toolkit:clock-settings', () => { elegantClock.settings(); return true; });
   ipcMain.handle('toolkit:clock-tools', () => { elegantClock.tools(); return true; });
   ipcMain.handle('toolkit:get-schedule-state', () => state.schedule);
-  ipcMain.handle('random-draw', (_event, people) => {
-    const list = Array.isArray(people) ? people.filter((person) => person?.name) : [];
-    if (!list.length) return null;
-    return list[Math.floor(Math.random() * list.length)];
+  ipcMain.handle('random-draw', (_event, options = {}) => {
+    const list = Array.isArray(state.names) ? state.names.filter((person) => person?.name) : [];
+    if (!list.length) return { error: '名单为空，请先在设置中添加名单' };
+
+    const mode = options.mode || state.settings.drawMode || 'single';
+    const groupSize = Number(options.groupSize) || Number(state.settings.drawGroupSize) || 1;
+    const groupCount = Number(options.groupCount) || Number(state.settings.drawGroupCount) || 1;
+    const continuous = options.continuous !== undefined ? options.continuous : state.settings.drawContinuous;
+
+    try {
+      if (mode === 'single') {
+        return drawSingle(list, continuous);
+      } else if (mode === 'group') {
+        return drawGroups(list, groupSize, groupCount, continuous);
+      }
+      return { error: '未知的抽取模式' };
+    } catch (error) {
+      return { error: error.message };
+    }
   });
-  ipcMain.handle('toggle-homework-widget', async (_event, expanded) => { resizeHomeworkWidget(expanded); await saveState(); resizeHomeworkWidget(expanded); sendState(); return state.settings.homeworkWidgetExpanded; });
-  ipcMain.handle('move-homework-widget', async (_event, x, y) => { if (!widgetWindow || widgetWindow.isDestroyed()) return false; widgetWindow.setPosition(Math.round(x), Math.round(y)); const [nextX, nextY] = widgetWindow.getPosition(); state.settings.homeworkWidgetX = nextX; state.settings.homeworkWidgetY = nextY; await saveState(); return true; });
+
+  ipcMain.handle('reset-drawn', async () => {
+    state.drawnIds = [];
+    await saveState();
+    sendState();
+    return { success: true };
+  });
+  ipcMain.handle('toggle-homework-widget', async (_event, expanded) => { 
+    resizeHomeworkWidget(expanded); 
+    await saveState(); 
+    sendState(); 
+    return state.settings.homeworkWidgetExpanded; 
+  });
+  ipcMain.handle('move-homework-widget', async (_event, x, y) => { 
+    if (!widgetWindow || widgetWindow.isDestroyed()) return false; 
+    
+    // 边界保护：确保窗口不会移出屏幕
+    const display = screen.getPrimaryDisplay().workArea;
+    const bounds = widgetWindow.getBounds();
+    const clampedX = Math.max(display.x, Math.min(x, display.x + display.width - bounds.width));
+    const clampedY = Math.max(display.y, Math.min(y, display.y + display.height - bounds.height));
+    
+    widgetWindow.setPosition(Math.round(clampedX), Math.round(clampedY)); 
+    const [nextX, nextY] = widgetWindow.getPosition(); 
+    state.settings.homeworkWidgetX = nextX; 
+    state.settings.homeworkWidgetY = nextY; 
+    await saveState(); 
+    return true; 
+  });
 }
 
 
@@ -203,7 +341,7 @@ app.whenReady().then(async () => {
     getThemeColor: () => state.settings.themeColor,
     startHidden: true
   });
-  elegantClock.show();
+  elegantClock.compact();
   mainWindow.once('ready-to-show', () => { mainWindow.show(); mainWindow.webContents.send('toolkit:navigate', 'clock'); });
   if (state.settings.homeworkWidgetEnabled) createWidget();
   reminderTimer = setInterval(reminderTick, 1000);

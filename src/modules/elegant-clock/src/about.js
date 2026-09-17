@@ -10,7 +10,7 @@ const elements = {
 };
 
 let aboutInfo = {
-  name: 'Elegant Clock',
+  name: '桌面时钟',
   version: '',
   githubProfileUrl: 'https://github.com/Dai2010',
   projectHomepageUrl: 'https://github.com/Dai2010/elegant-clock',
@@ -18,7 +18,7 @@ let aboutInfo = {
 };
 
 function renderAboutInfo() {
-  elements.appName.textContent = aboutInfo.name || 'Elegant Clock';
+  elements.appName.textContent = aboutInfo.name || '桌面时钟';
   elements.versionLabel.textContent = aboutInfo.version ? `v${aboutInfo.version}` : 'v--';
   elements.profileLink.textContent = aboutInfo.githubProfileUrl;
   elements.projectLink.textContent = aboutInfo.projectHomepageUrl;

@@ -63,11 +63,11 @@ const compactWindowState = {
 };
 
 const appId = 'io.github.dai2010.elegantclock';
-const appDisplayName = 'Elegant Clock';
+const appDisplayName = '桌面时钟';
 const githubProfileUrl = 'https://github.com/Dai2010';
 const projectHomepageUrl = 'https://github.com/Dai2010/elegant-clock';
 const autostartDesktopFileName = 'elegant-clock.desktop';
-const windowsRunEntryName = 'Elegant Clock';
+const windowsRunEntryName = 'Education Toolkit 桌面时钟';
 const autostartArgs = ['--autostart'];
 const maxTargetNotifyBeforeMs = 3650 * 24 * 60 * 60 * 1000;
 const updateCheckTimeoutMs = 12000;
@@ -859,7 +859,7 @@ function getLinuxDesktopEntry() {
     '[Desktop Entry]',
     'Type=Application',
     `Name=${escapeDesktopEntryValue(appDisplayName)}`,
-    'Comment=Launch Elegant Clock on login',
+    'Comment=Launch Education Toolkit Desktop Clock on login',
     `Exec=${execParts}`,
     `Icon=${escapeDesktopEntryValue(iconPath)}`,
     'Terminal=false',
@@ -1124,7 +1124,7 @@ async function launchDownloadedUpdate(downloadPath) {
 
   sendUpdateProgress({
     phase: 'complete',
-    message: '安装程序已启动，Elegant Clock 即将退出'
+    message: '安装程序已启动，桌面时钟即将退出'
   });
 
   const quitTimer = setTimeout(() => {
@@ -1492,7 +1492,7 @@ function createTray() {
     return;
   }
 
-  tray.setToolTip('Elegant Clock');
+  tray.setToolTip('Education Toolkit 桌面时钟');
   tray.on('click', () => requestFullUi());
   tray.on('double-click', () => requestFullUi());
   updateTrayMenu();
@@ -1748,7 +1748,7 @@ function createWindow() {
     height: defaultWindowSize.height,
     minWidth: defaultWindowSize.minWidth,
     minHeight: defaultWindowSize.minHeight,
-    title: 'Elegant Clock',
+    title: '桌面时钟',
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -1860,7 +1860,7 @@ function createManagedWindow(kind, options) {
 function createSettingsWindow() {
   return createManagedWindow('settings', {
     file: 'settings.html',
-    title: 'Elegant Clock 设置',
+    title: '桌面时钟设置',
     width: 660,
     height: 720,
     minWidth: 520,
@@ -1871,7 +1871,7 @@ function createSettingsWindow() {
 function createToolsWindow() {
   return createManagedWindow('tools', {
     file: 'tools.html',
-    title: 'Elegant Clock 功能',
+    title: '时钟功能',
     width: 660,
     height: 720,
     minWidth: 520,
@@ -1894,7 +1894,7 @@ function createAboutWindow() {
     height: 430,
     minWidth: 420,
     minHeight: 360,
-    title: '关于 Elegant Clock',
+    title: '关于桌面时钟',
     parent: mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
     modal: false,
     frame: true,
@@ -1950,7 +1950,7 @@ function createUpdateWindow() {
     height: 680,
     minWidth: 460,
     minHeight: 520,
-    title: 'Elegant Clock 更新',
+    title: '桌面时钟更新',
     frame: true,
     backgroundColor: '#17191c',
     icon: getIconPath(),
@@ -2160,7 +2160,7 @@ ipcMain.handle('ringtone:choose', async (event) => {
 
 ipcMain.handle('notification:show', (event, options = {}) => {
   const window = getWindowFromEvent(event);
-  const title = String(options.title || 'Elegant Clock');
+  const title = String(options.title || '桌面时钟');
   const body = String(options.body || '提醒时间到了');
   showSystemNotification(title, body, Boolean(options.focus), window);
   return true;

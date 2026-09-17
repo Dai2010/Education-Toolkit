@@ -254,7 +254,7 @@ function createUpdateInfo(release, currentVersion, platform, architecture, linux
   }
 
   const latestVersion = formatVersion(release.tag_name);
-  const releaseName = truncateText(release.name, 160) || `Elegant Clock v${latestVersion}`;
+  const releaseName = truncateText(release.name, 160) || `桌面时钟 v${latestVersion}`;
   const releaseNotes = truncateText(release.body, maxReleaseNotesLength) || '该版本未提供更新说明。';
 
   return {

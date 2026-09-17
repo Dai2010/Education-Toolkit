@@ -36,9 +36,110 @@ function render() {
   bindView();
 }
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  
+  const greetings = {
+    '早上': [
+      "早上好呀！新的一天开始啦～ (｀・ω・´)",
+      "早安！今天也要元气满满哦～",
+      "早上好！要不要先看看今天的课表？",
+      "新的一天开始了！准备好上课了吗？",
+      "早安～今天的作业都做完了吗？(｀・ω・´)",
+      "早上好！愿你今天收获满满～",
+      "清晨好呀～看看今天有什么安排吧！",
+      "早上好！记得吃早餐再开始学习哦～"
+    ],
+    '上午': [
+      "上午好！上课认真听讲哦～ (◕‿◕)",
+      "上午好！学习进展如何啦？",
+      "已经上了几节课啦？休息一下～",
+      "上午好！记得多喝水保持精力充沛～",
+      "继续加油！上午最适合学习了～",
+      "上午好～课间记得活动一下身体哦！",
+      "学习进行中～看看今天的作业？",
+      "上午好！专注学习的你最棒啦～"
+    ],
+    '中午': [
+      "中午好！该吃午饭啦～ (´・ω・`)",
+      "午安！记得好好休息，下午才有精力哦～",
+      "中午啦！吃饱才有力气继续学习～",
+      "午安～要不要小憩一会儿？",
+      "中午好！今天的午餐吃什么呢？",
+      "该休息啦～劳逸结合才能学得更好！",
+      "午安！放松一下，给大脑充充电～",
+      "中午好～下午还有课要上哦！"
+    ],
+    '下午': [
+      "下午好！继续努力吧～ (｀・ω・´)",
+      "下午好！距离放学还有一会儿～",
+      "下午好～还剩几节课就放学啦！",
+      "下午啦！坚持住，胜利就在前方～",
+      "下午好！今天的作业记得记录哦～",
+      "下午好～看看今天布置了什么作业？",
+      "下午时光～学习别忘了劳逸结合！",
+      "下午好！保持专注，你可以的～"
+    ],
+    '傍晚': [
+      "傍晚好！先去吃个饭吧～ (´｡• ᵕ •｡`)",
+      "该吃晚饭啦！补充能量准备晚自习～",
+      "傍晚啦～吃完饭还有晚自习要上呢！",
+      "晚饭时间到！吃饱了才有精神～",
+      "傍晚好～趁晚自习前休息一下吧！",
+      "一天课程告一段落！准备晚自习了～",
+      "傍晚时分～先吃饭，晚自习不着急！",
+      "晚上好！记得吃饭，晚自习还要加油～"
+    ],
+    '晚自习': [
+      "晚自习时间！加油完成作业吧～ (｀・ω・´)",
+      "晚自习中～今天的作业都记下来了吗？",
+      "晚自习啦～安静学习，效率更高哦！",
+      "晚上好！晚自习要专心致志～",
+      "晚自习时光～争取把作业都写完吧！",
+      "现在是晚自习～整理一下今天的笔记？",
+      "晚自习进行中～别忘了复习今天的内容！",
+      "晚上好～晚自习认真学习最帅啦！"
+    ],
+    '晚上': [
+      "晚自习结束啦！今天辛苦了～ (´｡• ω •｡`)",
+      "该回家休息啦～今天收获了什么呢？",
+      "晚上好！作业都完成了吗？",
+      "辛苦一天了～该准备洗漱睡觉啦！",
+      "晚上啦～早点休息才能明天精神饱满～",
+      "终于可以休息了！检查明天要带的东西吧～",
+      "晚上好～别忘了预习明天的课程哦！",
+      "一天结束啦！早点睡，明天见～ (´ω`)"
+    ],
+    '深夜': [
+      "夜深了...还不睡吗？(´；ω；`)",
+      "都这么晚了...明天还要上课呢！",
+      "该睡觉啦！熬夜对身体不好哦～",
+      "已经很晚了...作业明天再写吧！",
+      "深夜了...快去睡觉，别熬夜啦！(｀-ω-´)",
+      "这么晚还在学习？注意休息呀～",
+      "夜深人静...该关电脑睡觉啦！",
+      "都几点了...赶紧去睡觉！(つω-`)"
+    ]
+  };
+  
+  let period;
+  if (hour >= 5 && hour < 9) period = '早上';
+  else if (hour >= 9 && hour < 12) period = '上午';
+  else if (hour >= 12 && hour < 14) period = '中午';
+  else if (hour >= 14 && hour < 18) period = '下午';
+  else if (hour >= 18 && hour < 19) period = '傍晚';
+  else if (hour >= 19 && hour < 21 || (hour === 21 && new Date().getMinutes() < 30)) period = '晚自习';
+  else if ((hour === 21 && new Date().getMinutes() >= 30) || hour === 22) period = '晚上';
+  else period = '深夜';
+  
+  const messages = greetings[period];
+  return messages[Math.floor(Math.random() * messages.length)];
+}
+
 function homeView() {
   const pending = state.assignments.filter((item) => !item.completed).length;
-  return `<section class="view-heading"><div><div class="eyebrow">EDUCATION TOOLKIT</div><h1>今天要做什么？</h1><p>把课堂里常用的小工具，放在一个清晰的工作台上。</p></div></section>
+  const greeting = getGreeting();
+  return `<section class="view-heading"><div><div class="eyebrow">EDUCATION TOOLKIT</div><h1>${esc(greeting)}</h1><p>把课堂里常用的小工具，放在一个清晰的工作台上。</p></div></section>
     <div class="module-grid">
       <button class="module-card" data-go="random"><div class="module-icon"><img src="../assets/icons/random.svg" alt="" /></div><h2>随机抽人</h2><p>内置课堂随机抽人，直接使用工具包中的名单和抽取逻辑。</p><span class="arrow">→</span></button>
       <button class="module-card" data-go="clock"><div class="module-icon"><img src="../assets/icons/clock.svg" alt="" /></div><h2>桌面时钟</h2><p>保留 Elegant Clock 的核心时钟体验，并在下方显示下一节课和课间状态。</p><span class="arrow">→</span></button>
@@ -49,10 +150,16 @@ function homeView() {
 }
 
 function randomView() {
-  return `<section class="view-heading"><div><div class="eyebrow">CLASSROOM TOOL</div><h1>随机抽人</h1><p>使用当前名单进行课堂抽取，结果只在本机显示。</p></div></section>
-    <div class="panel"><div class="panel-title"><div><h2>快速抽取</h2><p>当前名单：${esc(state.settings.selectedNameList)}</p></div><button class="btn btn-primary" data-action="draw">开始抽取</button></div><div id="draw-result" class="empty">点击“开始抽取”选择一位同学</div></div>
-    <div class="panel"><div class="panel-title"><h2>名单预览</h2><button class="help-link" data-help="names">管理名单 →</button></div><div class="item-list">${state.names.slice(0, 8).map((person) => `<div class="list-item"><div><h3>${esc(person.name)}</h3><p>${esc(person.group || '未分组')}</p></div></div>`).join('') || '<div class="empty">还没有名单，请在设置中创建。</div>'}</div></div>`;
+  const mode = state.settings.drawMode || 'single';
+  const continuous = state.settings.drawContinuous || false;
+  const remaining = continuous ? state.names.length - (state.drawnIds?.length || 0) : state.names.length;
+  const drawn = state.drawnIds?.length || 0;
+  
+  return `<section class="view-heading"><div><div class="eyebrow">CLASSROOM TOOL</div><h1>随机抽人</h1><p>使用当前名单进行课堂抽取，支持单人和分组模式。</p></div><div class="inline-actions"><button class="help-link" data-help="random">抽取设置 →</button></div></section>
+    <div class="panel"><div class="panel-title"><div><h2>抽取控制</h2><p>当前名单：${esc(state.settings.selectedNameList)} · ${state.names.length} 人${continuous ? ` · 已抽 ${drawn} 人 · 剩余 ${remaining} 人` : ''}</p></div><div class="inline-actions">${continuous ? '<button class="btn btn-secondary" data-action="reset-drawn">重置记录</button>' : ''}<button class="btn btn-primary" data-action="draw">开始抽取</button></div></div><div class="draw-controls"><label class="setting-inline"><input type="radio" name="draw-mode" value="single" ${mode === 'single' ? 'checked' : ''} data-draw-mode /> 单人模式</label><label class="setting-inline"><input type="radio" name="draw-mode" value="group" ${mode === 'group' ? 'checked' : ''} data-draw-mode /> 分组模式</label>${mode === 'group' ? `<div class="draw-group-settings"><label>每组 <input type="number" min="1" max="${state.names.length}" value="${state.settings.drawGroupSize || 1}" data-group-size style="width:60px" /> 人</label><label>共 <input type="number" min="1" max="20" value="${state.settings.drawGroupCount || 1}" data-group-count style="width:60px" /> 组</label></div>` : ''}<label class="setting-inline"><input type="checkbox" ${continuous ? 'checked' : ''} data-draw-continuous /> 连续不重复抽取</label></div><div id="draw-result" class="draw-result empty">点击"开始抽取"选择同学</div></div>
+    <div class="panel"><div class="panel-title"><h2>名单预览 · ${state.names.length} 人</h2><button class="help-link" data-help="names">管理名单 →</button></div><div class="item-list">${state.names.map((person, index) => `<div class="list-item ${continuous && state.drawnIds?.includes(index) ? 'drawn' : ''}"><div><h3>${esc(person.name)}</h3><p>${esc(person.group || '未分组')}${continuous && state.drawnIds?.includes(index) ? ' · 已抽取' : ''}</p></div></div>`).join('') || '<div class="empty">还没有名单，请在设置中创建。</div>'}</div></div>`;
 }
+
 
 function scheduleSummary() {
   const result = ToolkitSchedule.summary(state.schedule);
@@ -69,9 +176,97 @@ function clockSummaryMarkup() {
 
 function clockView() {
   const schedule = todaySchedule();
+  const weekSchedule = buildWeekSchedule();
+  
   return `<section class="view-heading"><div><h1>桌面时钟</h1><p>桌面时钟随课表静默更新，不会因上下课弹到前台。</p></div><div class="inline-actions"><label class="setting-inline"><input id="desktop-clock-toggle" type="checkbox" ${(state.settings.desktopWidgetEnabled || state.settings.autostart) ? 'checked' : ''} /> 桌面时钟显示与开机启动</label><button class="btn btn-secondary" data-clock-tools>倒计时与提醒</button><button class="btn btn-primary" data-clock-settings>字体与时钟设置</button></div></section>
     <div class="clock-board"><div class="clock-face"><div class="time" id="clock-time">--:--:--</div><div class="date" id="clock-date">${formatDate(new Date())}</div></div><div class="panel next-class" id="clock-summary">${clockSummaryMarkup()}</div></div>
-    <div class="panel"><div class="panel-title"><h2>今日课表 · ${schedule.length} 项</h2><button class="help-link" data-help="schedule">课表帮助 →</button></div>${schedule.length ? `<table class="schedule-table"><thead><tr><th>开始时间</th><th>课程</th><th>任课老师</th><th>时长</th></tr></thead><tbody>${schedule.map((item) => `<tr><td>${esc(item.start)}</td><td>${esc(item.course)}</td><td>${esc(state.settings.subjectTeachers?.[item.subject] || '—')}</td><td>${item.duration} 分钟</td></tr>`).join('')}</tbody></table>` : '<div class="empty">今天没有课程。</div>'}</div>`;
+    <div class="panel"><div class="panel-title"><h2>完整课表</h2><button class="help-link" data-help="schedule">课表管理 →</button></div>${weekSchedule.periods.length ? renderWeekSchedule(weekSchedule) : '<div class="empty">还没有课表，请在设置中添加。</div>'}</div>`;
+}
+
+function buildWeekSchedule() {
+  // 获取所有时间段（不包含重复时间）
+  const timeSet = new Set();
+  state.schedule.forEach(lesson => {
+    timeSet.add(lesson.start);
+  });
+  
+  const periods = Array.from(timeSet).sort((a, b) => {
+    const [ha, ma] = a.split(':').map(Number);
+    const [hb, mb] = b.split(':').map(Number);
+    return (ha * 60 + ma) - (hb * 60 + mb);
+  });
+  
+  // 为每天每个时间段组织课程
+  const grid = {};
+  for (let day = 1; day <= 7; day++) {
+    grid[day] = {};
+    const dayLessons = ToolkitSchedule.forDay(state.schedule, day);
+    dayLessons.forEach(lesson => {
+      grid[day][lesson.start] = lesson;
+    });
+  }
+  
+  return { periods, grid };
+}
+
+function renderWeekSchedule(weekSchedule) {
+  const { periods, grid } = weekSchedule;
+  const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+  const now = new Date();
+  const today = ToolkitSchedule.weekday(now);
+  const currentStatus = ToolkitSchedule.summary(state.schedule, now);
+  
+  // 判断当前正在上的课或课间相邻的课
+  const isCurrentLesson = (lesson) => {
+    if (!lesson) return false;
+    
+    // 检查是否是今天的课（没有weekday表示每天重复，或weekday匹配今天）
+    const isToday = !lesson.weekday || lesson.weekday === today;
+    if (!isToday) return false;
+    
+    if (currentStatus.label === '上课中' && currentStatus.item) {
+      return lesson.id === currentStatus.item.id;
+    }
+    
+    if (currentStatus.label === '课间' && (currentStatus.item || currentStatus.next)) {
+      // 课间时高亮前一节课和下一节课
+      return (currentStatus.item && lesson.id === currentStatus.item.id) ||
+             (currentStatus.next && lesson.id === currentStatus.next.id);
+    }
+    
+    return false;
+  };
+  
+  return `<div class="week-schedule">
+    <div class="week-schedule-header">
+      <div class="time-header">节次</div>
+      ${weekdays.map((day, index) => 
+        `<div class="day-header ${today === index + 1 ? 'today' : ''}">周${day}</div>`
+      ).join('')}
+    </div>
+    <div class="week-schedule-body">
+      ${periods.map((time, periodIndex) => `
+        <div class="schedule-row">
+          <div class="period-time">
+            <div class="period-number">${periodIndex + 1}</div>
+            <div class="time-label">${time}</div>
+          </div>
+          ${weekdays.map((_, dayIndex) => {
+            const lesson = grid[dayIndex + 1]?.[time];
+            if (lesson) {
+              const teacher = state.settings.subjectTeachers?.[lesson.subject] || '';
+              const isCurrent = isCurrentLesson(lesson);
+              return `<div class="lesson-cell filled ${isCurrent ? 'current' : ''}">
+                <div class="lesson-name">${esc(lesson.course)}</div>
+                ${teacher ? `<div class="lesson-teacher">${esc(teacher)}</div>` : ''}
+              </div>`;
+            }
+            return `<div class="lesson-cell empty"></div>`;
+          }).join('')}
+        </div>
+      `).join('')}
+    </div>
+  </div>`;
 }
 
 function assignmentForm() {
@@ -80,9 +275,20 @@ function assignmentForm() {
 }
 
 function assignmentsView() {
-  const items = [...state.assignments].sort((a, b) => Number(a.completed) - Number(b.completed) || String(a.dueAt).localeCompare(String(b.dueAt)));
+  const items = [...state.assignments].sort((a, b) => {
+    // 先按完成状态排序：未完成在前
+    if (a.completed !== b.completed) {
+      return Number(a.completed) - Number(b.completed);
+    }
+    
+    // 再按上交时间排序：有时间的在前，时间早的在前
+    const aTime = a.dueAt ? new Date(a.dueAt).getTime() : Infinity;
+    const bTime = b.dueAt ? new Date(b.dueAt).getTime() : Infinity;
+    return aTime - bTime;
+  });
+  
   return `<section class="view-heading"><div><div class="eyebrow">HOMEWORK HUB</div><h1>作业布置</h1><p>清楚记录每项作业，提醒通过系统通知送达。</p></div><div class="inline-actions"><label class="setting-inline"><input id="homework-widget-toggle" type="checkbox" ${state.settings.homeworkWidgetEnabled ? 'checked' : ''} /> 始终显示桌面作业状态</label><button class="btn btn-primary" data-action="new-assignment">＋ 添加作业</button></div></section>${editingAssignmentId === 'new' || editingAssignmentId ? assignmentForm() : ''}
-    <div class="panel"><div class="panel-title"><div><h2>作业列表</h2><p>${items.filter((item) => !item.completed).length} 项待完成</p></div></div><div class="item-list">${items.length ? items.map((item) => `<div class="list-item ${item.completed ? 'done' : ''}"><div><h3>${esc(item.name)}</h3><p>${esc(item.subject || '其它')} · ${formatDateTime(item.dueAt)}${item.lessonLabel ? ` · ${esc(item.lessonLabel)}` : ''}</p></div><div class="inline-actions"><label class="switch" title="标记完成"><input type="checkbox" data-complete="${esc(item.id)}" ${item.completed ? 'checked' : ''} /><span class="slider"></span></label><button class="btn btn-ghost" data-edit-assignment="${esc(item.id)}">编辑</button><button class="btn btn-danger" data-delete-assignment="${esc(item.id)}">删除</button></div></div>`).join('') : '<div class="empty">还没有作业，点击右上角添加第一项。</div>'}</div></div>`;
+    <div class="panel assignments-panel"><div class="panel-title"><div><h2>作业列表</h2><p>${items.filter((item) => !item.completed).length} 项待完成</p></div></div><div class="assignment-list">${items.length ? items.map((item) => `<div class="assignment-item ${item.completed ? 'done' : ''}"><div class="assignment-content"><h3 class="assignment-name">${esc(item.name)}</h3><p class="assignment-meta">${esc(item.subject || '其它')} · ${formatDateTime(item.dueAt)}${item.lessonLabel ? ` · ${esc(item.lessonLabel)}` : ''}</p></div><div class="assignment-actions"><label class="switch" title="标记完成"><input type="checkbox" data-complete="${esc(item.id)}" ${item.completed ? 'checked' : ''} /><span class="slider"></span></label><button class="btn btn-ghost" data-edit-assignment="${esc(item.id)}">编辑</button><button class="btn btn-danger" data-delete-assignment="${esc(item.id)}">删除</button></div></div>`).join('') : '<div class="empty">还没有作业，点击右上角添加第一项。</div>'}</div></div>`;
 }
 
 function namesSection() {
@@ -98,7 +304,7 @@ function scheduleSection() {
 function helpView() {
   const topics = {
     overview: ['使用概览', '<p>Education Toolkit 将课堂常用工具集中在一个工作台中。首页卡片可以打开各模块，页面左上角返回键回到上一个界面。</p><p>不会创建？联系作者以获取帮助！（QQ:3361619396邮箱:dschuaweimate20@outlook.com或3361619396@qq.com）</p>'],
-    random: ['随机抽人', '<p>随机抽人使用设置中的当前名单。名单可以手动添加、删除，也可以导入 JSON。</p><p>示例：<code>[{"name":"张同学","group":"一组"}]</code></p>'],
+    random: ['随机抽人', '<p>随机抽人支持单人模式和分组模式。单人模式每次抽取一位同学；分组模式可设置每组人数和组数，结果按组显示。</p><p>连续不重复抽取会记录已抽成员，剩余人数不足时会提示并可重置记录。抽取结果的字体大小可在常规设置中调整。</p><p>名单可以手动添加、删除，也可以导入 JSON。示例：<code>[{"name":"张同学","group":"一组"}]</code></p>'],
     clock: ['桌面时钟', '<p>桌面时钟直接嵌入 Elegant Clock，保留原有倒计时、字体和时钟设置。课表状态会显示在时间下方，并标记上课中、课间和放学状态。</p><p>开机自启动可在常规设置中检测和调整。</p>'],
     assignments: ['作业布置', '<p>作业名称必填，科目和上交时间可选。提醒可以直接填写日期时间，也可以关联课表并选择上课前或上课后。</p><p>到点后只发送系统通知，不播放铃声。桌面作业状态默认关闭，开启后可拖动右侧小方块并手动展开或收缩。</p>'],
     names: ['名单管理', '<p>名单支持姓名、分组和 JSON 导入。随机抽人使用当前名单；删除名单后会立即同步到所有模块。</p>'],
@@ -110,7 +316,7 @@ function helpView() {
 }
 
 function settingsView() {
-  return `<section class="view-heading"><div><div class="eyebrow">WORKSPACE SETTINGS</div><h1>设置与关于</h1><p>将工具调整成适合你课堂节奏的样子。</p></div></section><div class="settings-layout"><nav class="settings-tabs">${[['general', '常规设置'], ['names', '名单管理'], ['schedule', '课表管理'], ['help', '帮助与关于']].map(([key, label]) => `<button class="settings-tab ${settingsTab === key ? 'active' : ''}" data-settings-tab="${key}">${label}</button>`).join('')}</nav><div class="settings-content"><div class="setting-section ${settingsTab === 'general' ? 'active' : ''}" data-section="general"><div class="panel"><div class="panel-title"><div><h2>外观与提醒</h2><p>颜色会立即应用到整个工具包。</p></div></div><div class="setting-row"><div><h3>主题颜色</h3><p>默认颜色为 #8888CC</p></div><input id="theme-color" class="color-input" type="color" value="${esc(state.settings.themeColor)}" /></div><div class="setting-row"><div><h3>默认铃声</h3><p>${esc(state.settings.ringtonePath || 'lofi-beats.mp3（FileGator）')}</p></div><button class="btn btn-secondary" data-action="pick-ringtone">选择铃声</button></div><div class="setting-row"><div><h3>全局更新</h3><p>打开最新版本发布页检查更新。</p></div><button class="btn btn-secondary" data-action="check-updates">检查更新</button></div><div class="setting-row"><div><h3>开机自启动</h3><p id="autostart-copy">正在检测系统状态…</p></div><label class="switch"><input id="autostart-toggle" type="checkbox" ${state.settings.autostart ? 'checked' : ''} /><span class="slider"></span></label></div></div></div>${namesSection()}${scheduleSection()}${helpView()}</div></div>`;
+  return `<section class="view-heading"><div><div class="eyebrow">WORKSPACE SETTINGS</div><h1>设置与关于</h1><p>将工具调整成适合你课堂节奏的样子。</p></div></section><div class="settings-layout"><nav class="settings-tabs">${[['general', '常规设置'], ['names', '名单管理'], ['schedule', '课表管理'], ['help', '帮助与关于']].map(([key, label]) => `<button class="settings-tab ${settingsTab === key ? 'active' : ''}" data-settings-tab="${key}">${label}</button>`).join('')}</nav><div class="settings-content"><div class="setting-section ${settingsTab === 'general' ? 'active' : ''}" data-section="general"><div class="panel"><div class="panel-title"><div><h2>外观与提醒</h2><p>颜色会立即应用到整个工具包。</p></div></div><div class="setting-row"><div><h3>主题颜色</h3><p>默认颜色为 #8888CC</p></div><input id="theme-color" class="color-input" type="color" value="${esc(state.settings.themeColor)}" /></div><div class="setting-row"><div><h3>默认铃声</h3><p>${esc(state.settings.ringtonePath || 'lofi-beats.mp3（FileGator）')}</p></div><button class="btn btn-secondary" data-action="pick-ringtone">选择铃声</button></div><div class="setting-row"><div><h3>全局更新</h3><p>打开最新版本发布页检查更新。</p></div><button class="btn btn-secondary" data-action="check-updates">检查更新</button></div><div class="setting-row"><div><h3>开机自启动</h3><p id="autostart-copy">正在检测系统状态…</p></div><label class="switch"><input id="autostart-toggle" type="checkbox" ${state.settings.autostart ? 'checked' : ''} /><span class="slider"></span></label></div></div><div class="panel"><div class="panel-title"><div><h2>随机抽人设置</h2><p>调整抽取结果的显示样式。</p></div></div><div class="setting-row"><div><h3>结果字号</h3><p>抽取结果显示的字体大小，默认 30px</p></div><input id="draw-font-size" type="number" min="16" max="72" value="${state.settings.drawResultFontSize || 30}" style="width:80px" /></div></div></div>${namesSection()}${scheduleSection()}${helpView()}</div></div>`;
 }
 const views = { home: homeView, random: randomView, clock: clockView, assignments: assignmentsView, settings: settingsView };
 
@@ -125,7 +331,83 @@ function bindView() {
   document.querySelectorAll('[data-delete-assignment]').forEach((element) => element.addEventListener('click', async () => { state.assignments = state.assignments.filter((item) => item.id !== element.dataset.deleteAssignment); await save(); showToast('作业已删除'); }));
   document.querySelectorAll('[data-edit-assignment]').forEach((element) => element.addEventListener('click', () => { editingAssignmentId = element.dataset.editAssignment; render(); }));
   document.querySelectorAll('[data-complete]').forEach((element) => element.addEventListener('change', async () => { const item = state.assignments.find((assignment) => assignment.id === element.dataset.complete); if (item) item.completed = element.checked; await save(); }));
-  document.querySelector('[data-action="draw"]')?.addEventListener('click', async () => { const result = document.querySelector('#draw-result'); if (!state.names.length) { result.textContent = '请先在设置中添加名单'; return; } const selected = await api.randomDraw(state.names); result.innerHTML = `<div style="font-size:30px;font-weight:700;color:var(--primary-dark)">${esc(selected.name)}</div><div style="margin-top:7px;color:var(--muted);font-size:13px">${esc(selected.group || '未分组')}</div>`; });
+  
+  // 抽取相关事件
+  document.querySelector('[data-action="draw"]')?.addEventListener('click', async () => { 
+    const resultEl = document.querySelector('#draw-result'); 
+    if (!state.names.length) { 
+      resultEl.className = 'draw-result empty';
+      resultEl.textContent = '请先在设置中添加名单'; 
+      return; 
+    } 
+    
+    const result = await api.randomDraw({ 
+      mode: state.settings.drawMode, 
+      groupSize: state.settings.drawGroupSize,
+      groupCount: state.settings.drawGroupCount,
+      continuous: state.settings.drawContinuous 
+    }); 
+    
+    if (result.error) {
+      resultEl.className = 'draw-result error';
+      resultEl.innerHTML = `<div style="font-size:18px;color:#e53e3e">${esc(result.error)}</div>${result.shouldReset ? '<button class="btn btn-secondary" style="margin-top:12px" data-action="reset-drawn-error">重置记录</button>' : ''}`;
+      document.querySelector('[data-action="reset-drawn-error"]')?.addEventListener('click', async () => {
+        await api.resetDrawn();
+        showToast('已重置抽取记录');
+        render();
+      });
+      return;
+    }
+    
+    const fontSize = state.settings.drawResultFontSize || 30;
+    
+    if (result.mode === 'single') {
+      resultEl.className = 'draw-result';
+      resultEl.innerHTML = `<div style="font-size:${fontSize}px;font-weight:700;color:var(--primary-dark)">${esc(result.selected.name)}</div><div style="margin-top:8px;color:var(--muted);font-size:14px">${esc(result.selected.group || '未分组')}${state.settings.drawContinuous ? ` · 剩余 ${result.remaining} 人` : ''}</div>`;
+    } else if (result.mode === 'group') {
+      resultEl.className = 'draw-result';
+      resultEl.innerHTML = result.groups.map((group, index) => 
+        `<div class="draw-group"><div class="group-label">第 ${index + 1} 组</div><div class="group-members">${group.map(p => `<span class="member-chip" style="font-size:${Math.max(16, fontSize - 8)}px">${esc(p.name)}</span>`).join('')}</div></div>`
+      ).join('') + (state.settings.drawContinuous ? `<div style="margin-top:12px;color:var(--muted);font-size:14px">剩余 ${result.remaining} 人</div>` : '');
+    }
+    
+    await save();
+    render();
+  });
+  
+  document.querySelector('[data-action="reset-drawn"]')?.addEventListener('click', async () => {
+    await api.resetDrawn();
+    showToast('已重置抽取记录');
+    render();
+  });
+  
+  document.querySelectorAll('[data-draw-mode]').forEach((element) => element.addEventListener('change', async (event) => {
+    state.settings.drawMode = event.target.value;
+    await save();
+    render();
+  }));
+  
+  document.querySelector('[data-draw-continuous]')?.addEventListener('change', async (event) => {
+    state.settings.drawContinuous = event.target.checked;
+    await save();
+    render();
+  });
+  
+  document.querySelector('[data-group-size]')?.addEventListener('change', async (event) => {
+    state.settings.drawGroupSize = Math.max(1, Number(event.target.value));
+    await save();
+  });
+  
+  document.querySelector('[data-group-count]')?.addEventListener('change', async (event) => {
+    state.settings.drawGroupCount = Math.max(1, Number(event.target.value));
+    await save();
+  });
+  
+  document.querySelector('#draw-font-size')?.addEventListener('change', async (event) => {
+    state.settings.drawResultFontSize = Math.max(16, Math.min(72, Number(event.target.value)));
+    await save();
+    showToast('字号已更新');
+  });
   document.querySelector('#theme-color')?.addEventListener('input', async (event) => { state.settings.themeColor = event.target.value; await save(); });
   document.querySelector('#homework-widget-toggle')?.addEventListener('change', async (event) => { state.settings.homeworkWidgetEnabled = event.target.checked; await save(); });
   document.querySelector('#desktop-clock-toggle')?.addEventListener('change', async (event) => { const enabled = event.target.checked; const actual = await api.setAutostart(enabled); state.settings.autostart = actual; state.settings.desktopWidgetEnabled = actual; if (!actual && enabled) event.target.checked = false; await save(); showToast(actual === enabled ? (enabled ? '已开启桌面时钟显示和开机启动' : '已关闭桌面时钟显示和开机启动') : '开机启动未能修改，已保持关闭'); });
@@ -177,7 +459,107 @@ async function onScheduleSubmit(event) {
 
 async function importSchedule() { try { const data = await api.importJson(); if (!data) return; const normalized = ToolkitSchedule.normalize(data); const next = { ...state, schedule: normalized.schedule, settings: { ...state.settings, subjectTeachers: { ...state.settings.subjectTeachers, ...normalized.subjectTeachers } } }; state = await api.saveState(next); render(); showToast(`已导入 ${state.schedule.length} 节课`); } catch (error) { showToast(`导入失败：${error.message}`); } }
 
-function markdownToHtml(markdown) { return String(markdown || '').split(/\r?\n/).map((line) => { const escaped = esc(line); if (escaped.startsWith('### ')) return `<h3>${escaped.slice(4)}</h3>`; if (escaped.startsWith('## ')) return `<h2>${escaped.slice(3)}</h2>`; if (escaped.startsWith('# ')) return `<h1>${escaped.slice(2)}</h1>`; if (/^- /.test(escaped)) return `<li>${escaped.slice(2)}</li>`; return escaped ? `<p>${escaped}</p>` : ''; }).join(''); }
+function markdownToHtml(markdown) {
+  let html = '';
+  let inList = false;
+  let inCodeBlock = false;
+  let codeBlockLines = [];
+  
+  const lines = String(markdown || '').split(/\r?\n/);
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    
+    // 代码块处理
+    if (trimmed.startsWith('```')) {
+      if (inCodeBlock) {
+        // 结束代码块
+        html += `<pre><code>${esc(codeBlockLines.join('\n'))}</code></pre>`;
+        codeBlockLines = [];
+        inCodeBlock = false;
+      } else {
+        // 开始代码块
+        inCodeBlock = true;
+        if (inList) {
+          html += '</ul>';
+          inList = false;
+        }
+      }
+      continue;
+    }
+    
+    if (inCodeBlock) {
+      codeBlockLines.push(line);
+      continue;
+    }
+    
+    const escaped = esc(line);
+    
+    // 标题
+    if (trimmed.startsWith('### ')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<h3>${esc(trimmed.slice(4))}</h3>`;
+      continue;
+    }
+    if (trimmed.startsWith('## ')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<h2>${esc(trimmed.slice(3))}</h2>`;
+      continue;
+    }
+    if (trimmed.startsWith('# ')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<h1>${esc(trimmed.slice(2))}</h1>`;
+      continue;
+    }
+    
+    // 列表
+    if (/^[-*] /.test(trimmed)) {
+      if (!inList) {
+        html += '<ul>';
+        inList = true;
+      }
+      html += `<li>${processInline(esc(trimmed.slice(2)))}</li>`;
+      continue;
+    }
+    
+    // 空行
+    if (!trimmed) {
+      if (inList) {
+        html += '</ul>';
+        inList = false;
+      }
+      continue;
+    }
+    
+    // 普通段落
+    if (inList) { html += '</ul>'; inList = false; }
+    html += `<p>${processInline(escaped)}</p>`;
+  }
+  
+  if (inList) html += '</ul>';
+  if (inCodeBlock) html += `<pre><code>${esc(codeBlockLines.join('\n'))}</code></pre>`;
+  
+  return html;
+}
+
+function processInline(text) {
+  // 行内代码 `code`
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  // 粗体 **text** 或 __text__
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  
+  // 斜体 *text* 或 _text_
+  text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  text = text.replace(/_([^_]+)_/g, '<em>$1</em>');
+  
+  // 链接 [text](url)
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  
+  return text;
+}
 
 function startClock() { clearInterval(clockTimer); let lastDay = ToolkitSchedule.weekday(new Date()); const tick = () => { const now = new Date(); const currentDay = ToolkitSchedule.weekday(now); if (currentDay !== lastDay) { lastDay = currentDay; render(); return; } const summary = document.querySelector('#clock-summary'); if (summary) summary.innerHTML = clockSummaryMarkup(); headerTime.textContent = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now); const dateElement = document.querySelector('#clock-date'); const timeElement = document.querySelector('#clock-time'); if (dateElement) dateElement.textContent = formatDate(now); if (timeElement) timeElement.textContent = now.toLocaleTimeString('zh-CN', { hour12: false }); }; tick(); clockTimer = setInterval(tick, 1000); }
 

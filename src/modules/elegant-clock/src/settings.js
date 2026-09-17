@@ -20,9 +20,6 @@ const elements = {
   ringtoneTest: document.querySelector('#ringtone-test'),
   ringtoneStop: document.querySelector('#ringtone-stop'),
   ringtoneDefault: document.querySelector('#ringtone-default'),
-  currentVersion: document.querySelector('#current-version'),
-  updateCheckStatus: document.querySelector('#update-check-status'),
-  updateCheckButton: document.querySelector('#update-check-button'),
   aboutOpen: document.querySelector('#about-open')
 };
 
@@ -121,38 +118,6 @@ function restoreBackgroundColorInput() {
   elements.backgroundColorInput.value = color;
   elements.backgroundColorHexInput.value = color.toUpperCase();
   renderBackgroundColorValidation(color);
-}
-
-function setUpdateCheckStatus(message, state = '') {
-  elements.updateCheckStatus.textContent = message;
-  if (state) {
-    elements.updateCheckStatus.dataset.state = state;
-  } else {
-    delete elements.updateCheckStatus.dataset.state;
-  }
-}
-
-async function checkForUpdates() {
-  elements.updateCheckButton.disabled = true;
-  setUpdateCheckStatus('正在检查…');
-
-  try {
-    const result = await shell?.checkForUpdates?.();
-    if (!result?.ok) {
-      throw new Error(result?.error || '检查更新失败');
-    }
-
-    elements.currentVersion.textContent = `当前版本 v${result.currentVersion}`;
-    if (result.status === 'update-available') {
-      setUpdateCheckStatus(`发现 v${result.latestVersion}，已打开更新窗口`, 'available');
-    } else {
-      setUpdateCheckStatus('已是最新版本');
-    }
-  } catch (error) {
-    setUpdateCheckStatus(error?.message || '检查更新失败', 'error');
-  } finally {
-    elements.updateCheckButton.disabled = false;
-  }
 }
 
 function renderAutostartInfo(info) {
@@ -312,19 +277,14 @@ function bindEvents() {
   elements.ringtoneTest.addEventListener('click', playRingtonePreview);
   elements.ringtoneStop.addEventListener('click', stopRingtonePreview);
   elements.ringtoneDefault.addEventListener('click', () => useDefaultRingtone().catch(() => {}));
-  elements.updateCheckButton.addEventListener('click', checkForUpdates);
   elements.aboutOpen.addEventListener('click', () => shell?.openAbout?.()?.catch?.(() => {}));
   shell?.onStateChanged?.(renderState);
 }
 
 async function init() {
   bindEvents();
-  const [state, version] = await Promise.all([
-    shell?.getState?.(),
-    shell?.getVersion?.()
-  ]);
+  const state = await shell?.getState?.();
   renderState(state);
-  elements.currentVersion.textContent = `当前版本 v${version || '--'}`;
   void refreshAutostartInfo();
 }
 
