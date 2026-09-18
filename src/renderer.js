@@ -8,7 +8,7 @@ const toast = document.querySelector('#toast');
 const subjects = ['数学', '语文', '英语', '物理', '化学', '生物', '历史', '政治', '地理', '其它'];
 const scheduleSubjects = [...subjects, '体育', '艺术', '早读', '信息技术', '通用技术', '活动课', '自习', '午练', '听力', '班会', '校本选修'];
 const viewTitles = { home: '首页', random: '随机抽人', clock: '桌面时钟', assignments: '作业布置', settings: '设置与关于' };
-let state;
+let state = { settings: {}, names: [], schedule: [], assignments: [], drawnIds: [] };
 let currentView = 'home';
 let previousView = 'home';
 let settingsTab = 'general';

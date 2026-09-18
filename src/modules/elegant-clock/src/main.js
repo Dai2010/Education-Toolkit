@@ -50,10 +50,10 @@ let watchdogRestartTimer;
 let rendererRecoveryTimer;
 
 const defaultWindowSize = {
-  width: 800,
-  height: 600,
-  minWidth: 600,
-  minHeight: 450
+  width: 720,
+  height: 680,
+  minWidth: 560,
+  minHeight: 480
 };
 
 const compactWindowState = {
