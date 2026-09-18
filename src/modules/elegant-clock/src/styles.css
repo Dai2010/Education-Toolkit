@@ -228,7 +228,7 @@ body.opaque .app-shell {
   white-space: nowrap;
 }
 
-.next-class { max-width: 100%; margin: 0; color: var(--muted); font-size: clamp(.82rem, 2.4vw, 1rem); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: pre-line; }
+.next-class { max-width: 100%; margin: 0; color: var(--muted); font-size: clamp(1.6rem, 4.8vw, 2rem); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: pre-line; }
 
 .quick-actions {
   position: fixed;

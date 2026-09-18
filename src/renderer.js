@@ -178,7 +178,7 @@ function clockView() {
   const schedule = todaySchedule();
   const weekSchedule = buildWeekSchedule();
   
-  return `<section class="view-heading"><div><h1>桌面时钟</h1><p>桌面时钟随课表静默更新，不会因上下课弹到前台。</p></div><div class="inline-actions"><label class="setting-inline"><input id="desktop-clock-toggle" type="checkbox" ${(state.settings.desktopWidgetEnabled || state.settings.autostart) ? 'checked' : ''} /> 桌面时钟显示与开机启动</label><button class="btn btn-secondary" data-clock-tools>倒计时与提醒</button><button class="btn btn-primary" data-clock-settings>字体与时钟设置</button></div></section>
+  return `<section class="view-heading"><div><h1>桌面时钟</h1><p>桌面时钟随课表静默更新，不会因上下课弹到前台。</p></div><div class="inline-actions"><label class="setting-inline"><input id="desktop-clock-toggle" type="checkbox" ${state.settings.desktopWidgetEnabled ? 'checked' : ''} /> 显示桌面时钟</label><label class="setting-inline"><input id="clock-autostart-toggle" type="checkbox" ${state.settings.autostart ? 'checked' : ''} /> 开机自启动</label><button class="btn btn-secondary" data-clock-tools>倒计时与提醒</button><button class="btn btn-primary" data-clock-settings>字体与时钟设置</button></div></section>
     <div class="clock-board"><div class="clock-face"><div class="time" id="clock-time">--:--:--</div><div class="date" id="clock-date">${formatDate(new Date())}</div></div><div class="panel next-class" id="clock-summary">${clockSummaryMarkup()}</div></div>
     <div class="panel"><div class="panel-title"><h2>完整课表</h2><button class="help-link" data-help="schedule">课表管理 →</button></div>${weekSchedule.periods.length ? renderWeekSchedule(weekSchedule) : '<div class="empty">还没有课表，请在设置中添加。</div>'}</div>`;
 }
@@ -410,8 +410,9 @@ function bindView() {
   });
   document.querySelector('#theme-color')?.addEventListener('input', async (event) => { state.settings.themeColor = event.target.value; await save(); });
   document.querySelector('#homework-widget-toggle')?.addEventListener('change', async (event) => { state.settings.homeworkWidgetEnabled = event.target.checked; await save(); });
-  document.querySelector('#desktop-clock-toggle')?.addEventListener('change', async (event) => { const enabled = event.target.checked; const actual = await api.setAutostart(enabled); state.settings.autostart = actual; state.settings.desktopWidgetEnabled = actual; if (!actual && enabled) event.target.checked = false; await save(); showToast(actual === enabled ? (enabled ? '已开启桌面时钟显示和开机启动' : '已关闭桌面时钟显示和开机启动') : '开机启动未能修改，已保持关闭'); });
+  document.querySelector('#desktop-clock-toggle')?.addEventListener('change', async (event) => { state.settings.desktopWidgetEnabled = event.target.checked; await save(); showToast(event.target.checked ? '已开启桌面时钟显示' : '已关闭桌面时钟显示'); });
   document.querySelector('#autostart-toggle')?.addEventListener('change', async (event) => { const actual = await api.setAutostart(event.target.checked); state.settings.autostart = actual; event.target.checked = actual; const copy = document.querySelector('#autostart-copy'); if (copy) copy.textContent = actual ? '系统当前已开启' : '系统当前未开启'; showToast(actual ? '已开启开机自启动' : '已关闭开机自启动'); });
+  document.querySelector('#clock-autostart-toggle')?.addEventListener('change', async (event) => { const actual = await api.setAutostart(event.target.checked); state.settings.autostart = actual; event.target.checked = actual; await save(); showToast(actual ? '已开启开机自启动' : '已关闭开机自启动'); });
   document.querySelector('[data-action="import-markdown"]')?.addEventListener('click', async () => { const text = await api.importMarkdown(); if (text) { const preview = document.querySelector('#markdown-preview'); if (preview) preview.innerHTML = markdownToHtml(text); showToast('Markdown 已载入'); } });
   document.querySelector('[data-action="check-updates"]')?.addEventListener('click', async () => { await api.checkForUpdates(); showToast('已打开更新页面'); });
   document.querySelector('[data-action="pick-ringtone"]')?.addEventListener('click', async () => { const selected = await api.pickRingtone(); if (selected) { state.settings.ringtonePath = selected; await save(); showToast('铃声已更新'); } });
@@ -438,9 +439,17 @@ function bindView() {
         api.saveState(state);
       }
     });
-  }
   if (currentView === 'clock') {
-    api.getAutostartStatus().then((status) => { const toggle = document.querySelector('#desktop-clock-toggle'); if (toggle) toggle.checked = status; if (status !== state.settings.autostart) { state.settings.autostart = status; state.settings.desktopWidgetEnabled = status; api.saveState(state); } });
+    const clockToggle = document.querySelector('#desktop-clock-toggle');
+    const autostartToggle = document.querySelector('#clock-autostart-toggle');
+    if (clockToggle) clockToggle.checked = state.settings.desktopWidgetEnabled;
+    api.getAutostartStatus().then((status) => {
+      if (autostartToggle) autostartToggle.checked = status;
+      if (status !== state.settings.autostart) {
+        state.settings.autostart = status;
+        api.saveState(state);
+      }
+    });
   }
   startClock();
 }

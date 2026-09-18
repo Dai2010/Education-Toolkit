@@ -110,8 +110,8 @@ function sendState() {
 function createWidget() {
   if (widgetWindow && !widgetWindow.isDestroyed()) return;
   widgetWindow = new BrowserWindow({
-    width: state.settings.homeworkWidgetExpanded ? 310 : 54,
-    height: state.settings.homeworkWidgetExpanded ? 190 : 54,
+    width: state.settings.homeworkWidgetExpanded ? 400 : 54,
+    height: state.settings.homeworkWidgetExpanded ? 280 : 54,
     frame: false,
     resizable: false,
     alwaysOnTop: true,
@@ -121,8 +121,8 @@ function createWidget() {
   });
   widgetWindow.loadFile(path.join(__dirname, 'widget.html'));
   const display = screen.getPrimaryDisplay().workArea;
-  const width = state.settings.homeworkWidgetExpanded ? 310 : 54;
-  const height = state.settings.homeworkWidgetExpanded ? 190 : 54;
+  const width = state.settings.homeworkWidgetExpanded ? 400 : 54;
+  const height = state.settings.homeworkWidgetExpanded ? 280 : 54;
   const savedX = state.settings.homeworkWidgetX;
   const savedY = state.settings.homeworkWidgetY;
   
