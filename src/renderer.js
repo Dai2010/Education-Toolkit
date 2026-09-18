@@ -427,7 +427,21 @@ function bindView() {
   document.querySelector('[data-action="cancel-schedule"]')?.addEventListener('click', () => { editingScheduleId = null; render(); });
   document.querySelectorAll('[data-edit-schedule]').forEach((element) => element.addEventListener('click', () => { editingScheduleId = element.dataset.editSchedule; render(); }));
   document.querySelectorAll('[data-delete-schedule]').forEach((element) => element.addEventListener('click', async () => { state.schedule = state.schedule.filter((lesson) => lesson.id !== element.dataset.deleteSchedule); await save(); }));
-  if (settingsTab === 'general') api.getAutostartStatus().then((status) => { const copy = document.querySelector('#autostart-copy'); if (copy) copy.textContent = status ? '系统当前已开启' : '系统当前未开启'; });
+  if (settingsTab === 'general') {
+    api.getAutostartStatus().then((status) => {
+      const copy = document.querySelector('#autostart-copy');
+      const toggle = document.querySelector('#autostart-toggle');
+      if (copy) copy.textContent = status ? '系统当前已开启' : '系统当前未开启';
+      if (toggle) toggle.checked = status;
+      if (status !== state.settings.autostart) {
+        state.settings.autostart = status;
+        api.saveState(state);
+      }
+    });
+  }
+  if (currentView === 'clock') {
+    api.getAutostartStatus().then((status) => { const toggle = document.querySelector('#desktop-clock-toggle'); if (toggle) toggle.checked = status; if (status !== state.settings.autostart) { state.settings.autostart = status; state.settings.desktopWidgetEnabled = status; api.saveState(state); } });
+  }
   startClock();
 }
 
@@ -451,6 +465,14 @@ async function importNames() {
     if (Array.isArray(data)) {
       // 直接数组格式：[{name, group}] 或 ["name"]
       names = data;
+    } else if (data.lists && Array.isArray(data.lists) && data.lists.length > 0) {
+      // FileGator lists.json 格式：{lists: [{people: [...]}]}
+      const firstList = data.lists[0];
+      if (firstList.people && Array.isArray(firstList.people)) {
+        names = firstList.people;
+      } else {
+        throw new Error('lists 格式错误：缺少 people 数组');
+      }
     } else if (data.names && Array.isArray(data.names)) {
       // {names: [...]} 格式
       names = data.names;
@@ -458,7 +480,7 @@ async function importNames() {
       // 旧版 rollcall 格式：{students: [...]}
       names = data.students;
     } else {
-      throw new Error('名单 JSON 应为数组或包含 names/students 数组');
+      throw new Error('名单 JSON 应为数组或包含 names/students/lists 数组');
     }
     
     if (!Array.isArray(names)) {
@@ -470,7 +492,7 @@ async function importNames() {
       if (typeof item === 'string') {
         return { name: item, group: '' };
       }
-      // 兼容 rollcall 的 student 字段
+      // 兼容多种字段名
       const name = item.name || item.student || '';
       const group = item.group || item.班级 || '';
       return { name: String(name).trim(), group: String(group).trim() };
@@ -481,7 +503,7 @@ async function importNames() {
     showToast(`已导入 ${state.names.length} 人`); 
   } catch (error) { 
     showToast(`导入失败：${error.message}`); 
-  } 
+  }
 }
 async function onScheduleSubmit(event) {
   event.preventDefault();
