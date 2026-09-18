@@ -439,6 +439,7 @@ function bindView() {
         api.saveState(state);
       }
     });
+  }
   if (currentView === 'clock') {
     const clockToggle = document.querySelector('#desktop-clock-toggle');
     const autostartToggle = document.querySelector('#clock-autostart-toggle');
