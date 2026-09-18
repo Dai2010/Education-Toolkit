@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('elegantClock', {
     deltaX: Number(deltaX) || 0,
     deltaY: Number(deltaY) || 0
   }),
+  fitCompactWindow: () => ipcRenderer.invoke('window:fit-compact'),
   onRestoreFullUi: (callback) => {
     if (typeof callback !== 'function') {
       return () => {};
@@ -92,4 +93,3 @@ contextBridge.exposeInMainWorld('elegantClock', {
   ,onThemeChanged: (callback) => ipcRenderer.on('toolkit:theme', (_event, value) => callback(value))
   ,onCompactState: (callback) => ipcRenderer.on('window:compact-state', (_event, value) => callback(value))
 });
-

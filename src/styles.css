@@ -1,10 +1,10 @@
 :root { --primary: #8888CC; --primary-dark: #6868aa; --primary-soft: #efeffa; --ink: #2b2b42; --muted: #77778b; --border: #e8e7f0; --surface: #fff; --canvas: #f8f7fc; --success: #4d9b7a; --danger: #c65e6f; font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif; color: var(--ink); background: var(--canvas); }
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; background: var(--canvas); }
+body { margin: 0; min-height: 100vh; overflow: hidden; background: var(--canvas); }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
-.app-layout { display: flex; min-height: 100vh; }
-.sidebar { width: 236px; flex: 0 0 236px; background: var(--surface); border-right: 1px solid var(--border); padding: 28px 16px 22px; display: flex; flex-direction: column; }
+.app-layout { display: flex; min-height: 100vh; height: 100vh; }
+.sidebar { position: sticky; top: 0; width: 236px; height: 100vh; flex: 0 0 236px; background: var(--surface); border-right: 1px solid var(--border); padding: 28px 16px 22px; display: flex; flex-direction: column; }
 .brand { display: flex; gap: 11px; align-items: center; padding: 0 12px 34px; color: var(--ink); }
 .brand-mark { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; color: #fff; background: var(--primary); font-size: 13px; font-weight: 800; letter-spacing: .5px; }
 .brand strong, .brand span { display: block; line-height: 1.15; }
@@ -17,7 +17,7 @@ button { cursor: pointer; }
 .nav-item span { width: 20px; text-align: center; font-size: 17px; }
 .sidebar-footer { display: flex; align-items: center; gap: 8px; margin: auto 12px 0; color: var(--muted); font-size: 11px; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
-.content { min-width: 0; flex: 1; }
+.content { min-width: 0; flex: 1; height: 100vh; overflow-y: auto; overflow-x: hidden; }
 .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 0 42px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,.72); backdrop-filter: blur(12px); }
 .breadcrumb { display: flex; align-items: center; gap: 14px; font-size: 18px; font-weight: 700; }
 .back-btn { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 9px; color: var(--muted); background: var(--surface); font-size: 19px; }

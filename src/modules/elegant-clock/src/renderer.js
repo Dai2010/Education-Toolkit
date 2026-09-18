@@ -109,6 +109,7 @@ function updateClock() {
   renderNextClass(now);
   elements.currentDate.textContent = dateFormatter.format(now);
   elements.currentTime.textContent = timeFormatter.format(now);
+  shell?.fitCompactWindow?.();
 
   if (latestState?.countdown?.running) {
     const remainingMs = Math.max(0, latestState.countdown.deadlineMs - Date.now());
@@ -145,6 +146,7 @@ async function updateNextClass() {
   try {
     toolkitLessons = await shell?.getScheduleState?.() || [];
     renderNextClass();
+    shell?.fitCompactWindow?.();
   } catch { elements.nextClass.textContent = '课表暂不可用'; }
 }
 
@@ -341,7 +343,7 @@ function bindEvents() {
     exitCompactMode();
   });
   shell?.onCompactState?.(applyCompactUiState);
-  shell?.onScheduleChanged?.((payload) => { toolkitLessons = payload?.schedule || payload || []; toolkitSubjectTeachers = payload?.subjectTeachers || {}; renderNextClass(); });
+  shell?.onScheduleChanged?.((payload) => { toolkitLessons = payload?.schedule || payload || []; toolkitSubjectTeachers = payload?.subjectTeachers || {}; renderNextClass(); shell?.fitCompactWindow?.(); });
   shell?.onThemeChanged?.((color) => { if (/^#[0-9a-f]{6}$/i.test(color || '')) document.documentElement.style.setProperty('--accent', color); });
   shell?.onStateChanged?.(renderState);
   shell?.onPlayAlert?.(playAlertTone);

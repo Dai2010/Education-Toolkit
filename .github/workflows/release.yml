@@ -36,3 +36,4 @@ jobs:
             dist/*.exe
             dist/*.msi
           generate_release_notes: true
+          body_path: .github/release-v1.0.5.md

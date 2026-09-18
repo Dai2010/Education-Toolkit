@@ -7,7 +7,7 @@ const toast = document.querySelector('#toast');
 
 const subjects = ['数学', '语文', '英语', '物理', '化学', '生物', '历史', '政治', '地理', '其它'];
 const scheduleSubjects = [...subjects, '体育', '艺术', '早读', '信息技术', '通用技术', '活动课', '自习', '午练', '听力', '班会', '校本选修'];
-const viewTitles = { home: '首页', random: '随机抽人', clock: '桌面时钟', assignments: '作业布置', settings: '设置与关于' };
+const viewTitles = { home: '首页', random: '随机抽人', clock: '桌面时钟', schedule: '课表', assignments: '作业布置', settings: '设置与关于' };
 let state = { settings: {}, names: [], schedule: [], assignments: [], drawnIds: [] };
 let currentView = 'home';
 let previousView = 'home';
@@ -175,12 +175,17 @@ function clockSummaryMarkup() {
 }
 
 function clockView() {
-  const schedule = todaySchedule();
+  return `<section class="view-heading"><div><div class="eyebrow">DESKTOP CLOCK</div><h1>桌面时钟</h1><p>显示时间和当前课程状态；完整课表请进入“课表”区域查看。</p></div></section>
+    <div class="panel clock-controls"><div class="panel-title"><div><h2>时钟控制</h2><p>时钟外观、倒计时、提醒和更新使用 Elegant Clock 的功能。</p></div><div class="inline-actions"><button class="btn btn-secondary" data-clock-tools>倒计时与提醒</button><button class="btn btn-secondary" data-clock-update>检查更新</button><button class="btn btn-primary" data-clock-settings>时钟设置</button></div></div></div>
+    <div class="clock-board"><div class="clock-face"><div class="time" id="clock-time">--:--:--</div><div class="date" id="clock-date">${formatDate(new Date())}</div></div><div class="panel next-class" id="clock-summary">${clockSummaryMarkup()}</div></div>`;
+}
+
+function scheduleView() {
+  settingsTab = 'schedule';
   const weekSchedule = buildWeekSchedule();
-  
-  return `<section class="view-heading"><div><h1>桌面时钟</h1><p>桌面时钟随课表静默更新，不会因上下课弹到前台。</p></div><div class="inline-actions"><label class="setting-inline"><input id="desktop-clock-toggle" type="checkbox" ${state.settings.desktopWidgetEnabled ? 'checked' : ''} /> 显示桌面时钟</label><label class="setting-inline"><input id="clock-autostart-toggle" type="checkbox" ${state.settings.autostart ? 'checked' : ''} /> 开机自启动</label><button class="btn btn-secondary" data-clock-tools>倒计时与提醒</button><button class="btn btn-primary" data-clock-settings>字体与时钟设置</button></div></section>
-    <div class="clock-board"><div class="clock-face"><div class="time" id="clock-time">--:--:--</div><div class="date" id="clock-date">${formatDate(new Date())}</div></div><div class="panel next-class" id="clock-summary">${clockSummaryMarkup()}</div></div>
-    <div class="panel"><div class="panel-title"><h2>完整课表</h2><button class="help-link" data-help="schedule">课表管理 →</button></div>${weekSchedule.periods.length ? renderWeekSchedule(weekSchedule) : '<div class="empty">还没有课表，请在设置中添加。</div>'}</div>`;
+  return `<section class="view-heading"><div><div class="eyebrow">CLASS SCHEDULE</div><h1>课表</h1><p>完整查看、编辑和导入课表。课表状态会同步到桌面时钟。</p></div><button class="help-link" data-help="schedule">课表帮助 →</button></section>
+    <div class="panel"><div class="panel-title"><div><h2>完整周课表</h2><p>当前课程会随系统时间自动高亮。</p></div></div>${weekSchedule.periods.length ? renderWeekSchedule(weekSchedule) : '<div class="empty">还没有课表，请在下方添加或导入。</div>'}</div>
+    ${scheduleSection(true)}`;
 }
 
 function buildWeekSchedule() {
@@ -241,7 +246,7 @@ function renderWeekSchedule(weekSchedule) {
     <div class="week-schedule-header">
       <div class="time-header">节次</div>
       ${weekdays.map((day, index) => 
-        `<div class="day-header ${today === index + 1 ? 'today' : ''}">周${day}</div>`
+        `<div class="day-header ${today === index + 1 ? 'today' : ''}" data-day="${index + 1}">周${day}</div>`
       ).join('')}
     </div>
     <div class="week-schedule-body">
@@ -256,7 +261,7 @@ function renderWeekSchedule(weekSchedule) {
             if (lesson) {
               const teacher = state.settings.subjectTeachers?.[lesson.subject] || '';
               const isCurrent = isCurrentLesson(lesson);
-              return `<div class="lesson-cell filled ${isCurrent ? 'current' : ''}">
+        return `<div class="lesson-cell filled ${isCurrent ? 'current' : ''}" data-lesson-id="${esc(lesson.id)}" data-lesson-day="${dayIndex + 1}">
                 <div class="lesson-name">${esc(lesson.course)}</div>
                 ${teacher ? `<div class="lesson-teacher">${esc(teacher)}</div>` : ''}
               </div>`;
@@ -295,7 +300,7 @@ function namesSection() {
   return `<div class="setting-section ${settingsTab === 'names' ? 'active' : ''}" data-section="names"><div class="panel-title"><div><h2>名单管理</h2><p>支持导入 JSON 或手动创建名单。</p></div><button class="help-link" data-help="names">帮助</button></div><form id="name-form"><div class="form-grid"><div class="form-field"><label>姓名 *</label><input name="name" required placeholder="例如：林同学" /></div><div class="form-field"><label>分组</label><input name="group" placeholder="例如：一组" /></div></div><div class="actions"><button class="btn btn-secondary" type="button" data-action="import-names">导入 JSON</button><button class="btn btn-primary" type="submit">添加名单</button></div></form><div class="item-list" style="margin-top:18px">${state.names.map((person, index) => `<div class="list-item"><div><h3>${esc(person.name)}</h3><p>${esc(person.group || '未分组')}</p></div><button class="btn btn-danger" data-delete-name="${index}">删除</button></div>`).join('') || '<div class="empty">暂无名单。</div>'}</div></div>`;
 }
 
-function scheduleSection() {
+function scheduleSection(standalone = false) {
   const item = state.schedule.find((lesson) => lesson.id === editingScheduleId) || { weekday: scheduleDay };
   const availableSubjects = [...new Set([...scheduleSubjects, ...state.schedule.map((row) => row.subject)])];
   return `<div class="setting-section ${settingsTab === 'schedule' ? 'active' : ''}" data-section="schedule"><div class="panel-title"><div><h2>课表管理</h2><p>老师按科目统一设置，老师姓名可以留空。</p></div><button class="help-link" data-help="schedule">帮助</button></div><div class="form-field"><label for="schedule-day">查看星期</label><select id="schedule-day">${['一','二','三','四','五','六','日'].map((day,index) => `<option value="${index+1}" ${scheduleDay === index+1 ? 'selected' : ''}>星期${day}</option>`).join('')}</select></div><form id="schedule-form"><div class="form-grid"><div class="form-field"><label>科目 *</label><select name="subject" required>${availableSubjects.map((subject) => `<option value="${esc(subject)}" ${item.subject === subject ? 'selected' : ''}>${esc(subject)}</option>`).join('')}</select></div><div class="form-field"><label>课程名 *</label><input name="course" required value="${esc(item.course)}" /></div><div class="form-field"><label>星期（可选）</label><select name="weekday"><option value="">每天</option>${['一', '二', '三', '四', '五', '六', '日'].map((day, index) => `<option value="${index + 1}" ${Number(item.weekday) === index + 1 ? 'selected' : ''}>星期${day}</option>`).join('')}</select></div><div class="form-field"><label>任课老师（可留空）</label><input name="teacher" value="${esc(state.settings.subjectTeachers?.[item.subject || availableSubjects[0]] || '')}" placeholder="可不填写" /></div><div class="form-field"><label>开始时间 *</label><input name="start" type="time" required value="${esc(item.start)}" /></div><div class="form-field"><label>课程时长（分钟）</label><input name="duration" type="number" min="1" value="${Number(item.duration ?? 40)}" /></div><div class="form-field"><label>课间时长（分钟）</label><input name="breakDuration" type="number" min="0" value="${Number(item.breakDuration ?? 10)}" /></div></div><div class="actions"><button class="btn btn-secondary" type="button" data-action="import-schedule">导入 JSON</button>${editingScheduleId ? '<button class="btn btn-ghost" type="button" data-action="cancel-schedule">取消编辑</button>' : ''}<button class="btn btn-primary" type="submit">${editingScheduleId ? '保存课程' : '添加课程'}</button></div></form><div class="item-list" style="margin-top:18px">${ToolkitSchedule.forDay(state.schedule, scheduleDay).map((lesson) => `<div class="list-item"><div><h3>${esc(lesson.start)} · ${esc(lesson.course)}</h3><p>${lesson.weekday ? `星期${['一', '二', '三', '四', '五', '六', '日'][lesson.weekday - 1]} · ` : ''}${esc(lesson.subject || '其它')} · ${esc(state.settings.subjectTeachers?.[lesson.subject] || '未设置老师')} · ${Number(lesson.duration ?? 40)} 分钟 · 课间 ${Number(lesson.breakDuration ?? 10)} 分钟</p></div><div class="inline-actions"><button class="btn btn-ghost" data-edit-schedule="${esc(lesson.id)}">编辑</button><button class="btn btn-danger" data-delete-schedule="${esc(lesson.id)}">删除</button></div></div>`).join('') || '<div class="empty">暂无课程。</div>'}</div></div>`;
@@ -303,26 +308,28 @@ function scheduleSection() {
 
 function helpView() {
   const topics = {
-    overview: ['使用概览', '<p>Education Toolkit 将课堂常用工具集中在一个工作台中。首页卡片可以打开各模块，页面左上角返回键回到上一个界面。</p><p>不会创建？联系作者以获取帮助！（QQ:3361619396邮箱:dschuaweimate20@outlook.com或3361619396@qq.com）</p>'],
-    random: ['随机抽人', '<p>随机抽人支持单人模式和分组模式。单人模式每次抽取一位同学；分组模式可设置每组人数和组数，结果按组显示。</p><p>连续不重复抽取会记录已抽成员，剩余人数不足时会提示并可重置记录。抽取结果的字体大小可在常规设置中调整。</p><p>名单可以手动添加、删除，也可以导入 JSON。示例：<code>[{"name":"张同学","group":"一组"}]</code></p>'],
-    clock: ['桌面时钟', '<p>桌面时钟直接嵌入 Elegant Clock，保留原有倒计时、字体和时钟设置。课表状态会显示在时间下方，并标记上课中、课间和放学状态。</p><p>开机自启动可在常规设置中检测和调整。</p>'],
-    assignments: ['作业布置', '<p>作业名称必填，科目和上交时间可选。提醒可以直接填写日期时间，也可以关联课表并选择上课前或上课后。</p><p>到点后只发送系统通知，不播放铃声。桌面作业状态默认关闭，开启后可拖动右侧小方块并手动展开或收缩。</p>'],
-    names: ['名单管理', '<p>名单支持姓名、分组和 JSON 导入。随机抽人使用当前名单；删除名单后会立即同步到所有模块。</p>'],
-    schedule: ['课表管理', '<p>课程包含科目、课程名、开始时间、课程时长和课间时长，默认课程 40 分钟、课间 10 分钟。</p><p>任课老师按科目统一设置，可留空。星期用 weekday 表示，1 至 7 为周一至周日；省略则每天重复。subjectTeachers 为科目与老师对照，schedule 为全部课程。导入会检查时间重叠；零分钟课间会保留。JSON 示例：</p><p><code>[{"subject":"数学","course":"数学","start":"08:00","duration":40,"breakDuration":10}]</code></p>'],
-    settings: ['设置与更新', '<p>常规设置包含主题色、默认音频路径、全局更新和开机自启动。主题色默认是 <code>#8888CC</code>。</p><p>帮助文件支持导入 Markdown；导入内容只在当前帮助页预览。</p>']
+    overview: ['先看这里', '<h3>日常使用顺序</h3><ol><li>在“设置与关于 → 课表”录入或导入课表。</li><li>在“设置与关于 → 名单管理”添加或导入学生名单。</li><li>需要时在“作业布置”记录作业和提醒时间。</li><li>上课时点击左侧对应区块，工具会保留当前页面。</li></ol><h3>启动后看不到主界面</h3><p>这是正常行为：应用启动后只显示桌面时钟。点击桌面时钟会打开主界面的“桌面时钟”区块；也可以从托盘菜单打开。</p>'],
+    clock: ['桌面时钟', '<h3>这里显示什么</h3><p>这里显示当前时间、日期和当前课程状态。课表内容不放在时钟区，完整课表请点击左侧“课表”。</p><h3>时钟控制</h3><ul><li>“时钟设置”：调整字体、字号、透明度、置顶等时钟专属选项。</li><li>“倒计时与提醒”：使用 Elegant Clock 的倒计时、番茄钟、秒表和提醒。</li><li>“检查更新”：检查 Education Toolkit 的新版本，并使用直连或代理下载。</li></ul><p>主题颜色、铃声和开机自启动属于工具包全局设置，请到“设置与关于 → 常规设置”修改。</p>'],
+    schedule: ['课表', '<h3>录入课程</h3><p>点击“添加课程”，填写科目、课程名、开始时间、课程时长和课间时长。选择具体星期表示只在该天使用；选择“每天”表示每天重复。</p><h3>任课老师</h3><p>老师按科目统一保存。同一科目的课程会使用同一个老师名称，修改某一节课时也会更新该科目的老师。</p><h3>查看和同步</h3><p>上方周课表按星期显示全部课程，当前课程会自动高亮。课表状态会同步到桌面时钟，但编辑课表必须在“课表”区域完成。</p><h3>导入格式</h3><p>导入 JSON 时使用 <code>schedule</code> 数组，每项至少包含 <code>subject</code>、<code>course</code>、<code>start</code>；可选字段为 <code>weekday</code>、<code>duration</code>、<code>breakDuration</code>。</p>'],
+    random: ['随机抽人', '<h3>单人模式</h3><p>每次随机抽取一名学生。</p><h3>分组模式</h3><p>设置每组人数和组数，系统会在本次抽取中避免重复分组。</p><h3>连续不重复</h3><p>打开后，已经抽过的学生会被记录并在名单预览中标记。剩余人数不足以完成下一次抽取时，系统会停止本次抽取；点击“重置记录”后重新开始。</p><p>名单来源是“设置与关于 → 名单管理”中的当前名单。</p>'],
+    names: ['名单管理', '<h3>手动添加</h3><p>输入姓名，可选填写分组，然后点击“添加名单”。</p><h3>批量导入</h3><p>支持字符串数组或对象数组。例如：<code>[{"name":"张三","group":"一组"}]</code>。也兼容包含 <code>names</code>、<code>students</code> 或 FileGator <code>lists</code> 数据的文件。</p><h3>注意</h3><p>随机抽人使用当前名单。导入名单会替换当前名单，不会追加到旧名单。</p>'],
+    assignments: ['作业布置', '<h3>添加作业</h3><p>名称必填，科目和上交时间可选。可以直接填写上交时间，也可以选择课表课程并设置在课前或课后提醒。</p><h3>完成和删除</h3><p>勾选右侧开关表示已完成；编辑会保留完成状态，删除会立即移除记录。</p><h3>桌面作业状态</h3><p>打开页面右上角的桌面作业状态后，会显示一个置顶小组件。小组件可以拖动，位置会自动保存。</p>'],
+    settings: ['全局设置', '<h3>常规设置</h3><p>主题颜色、默认铃声和开机自启动都在这里设置。时钟区块会自动跟随这些全局设置，不需要重复配置。</p><h3>更新</h3><p>更新检查会显示版本说明。选择直连或代理下载后，程序会先校验安装包大小和 SHA-256，校验成功才会启动安装程序。</p><h3>数据</h3><p>数据保存在 Electron 的用户数据目录中。卸载或清理用户数据前，请先备份课表、名单和作业数据。</p>']
   };
   const [titleText, content] = topics[helpTopic] || topics.overview;
-  return `<div class="setting-section ${settingsTab === 'help' ? 'active' : ''}" data-section="help"><div class="panel-title"><div><h2>模块帮助</h2><p>从左侧选择模块查看对应说明。</p></div></div><div class="help-layout"><nav class="help-nav">${Object.entries(topics).map(([key, value]) => `<button class="help-nav-item ${helpTopic === key ? 'active' : ''}" data-help-topic="${key}">${value[0]}</button>`).join('')}</nav><div class="panel help-copy"><h2>${titleText}</h2>${content}${helpTopic === 'overview' ? '<div class="actions"><button class="btn btn-secondary" data-action="import-markdown">导入 Markdown 帮助</button></div><div id="markdown-preview"></div>' : ''}</div></div></div>`;
+  return `<div class="setting-section ${settingsTab === 'help' ? 'active' : ''}" data-section="help"><div class="panel-title"><div><h2>模块帮助</h2><p>从左侧选择模块查看对应说明。</p></div></div><div class="help-layout"><nav class="help-nav">${Object.entries(topics).map(([key, value]) => `<button class="help-nav-item ${helpTopic === key ? 'active' : ''}" data-help-topic="${key}">${value[0]}</button>`).join('')}</nav><div class="panel help-copy"><h2>${titleText}</h2>${content}</div></div></div>`;
 }
 
 function settingsView() {
+  if (settingsTab === 'schedule') settingsTab = 'general';
   return `<section class="view-heading"><div><div class="eyebrow">WORKSPACE SETTINGS</div><h1>设置与关于</h1><p>将工具调整成适合你课堂节奏的样子。</p></div></section><div class="settings-layout"><nav class="settings-tabs">${[['general', '常规设置'], ['names', '名单管理'], ['schedule', '课表管理'], ['help', '帮助与关于']].map(([key, label]) => `<button class="settings-tab ${settingsTab === key ? 'active' : ''}" data-settings-tab="${key}">${label}</button>`).join('')}</nav><div class="settings-content"><div class="setting-section ${settingsTab === 'general' ? 'active' : ''}" data-section="general"><div class="panel"><div class="panel-title"><div><h2>外观与提醒</h2><p>颜色会立即应用到整个工具包。</p></div></div><div class="setting-row"><div><h3>主题颜色</h3><p>默认颜色为 #8888CC</p></div><input id="theme-color" class="color-input" type="color" value="${esc(state.settings.themeColor)}" /></div><div class="setting-row"><div><h3>默认铃声</h3><p>${esc(state.settings.ringtonePath || 'lofi-beats.mp3（FileGator）')}</p></div><button class="btn btn-secondary" data-action="pick-ringtone">选择铃声</button></div><div class="setting-row"><div><h3>全局更新</h3><p>打开最新版本发布页检查更新。</p></div><button class="btn btn-secondary" data-action="check-updates">检查更新</button></div><div class="setting-row"><div><h3>开机自启动</h3><p id="autostart-copy">正在检测系统状态…</p></div><label class="switch"><input id="autostart-toggle" type="checkbox" ${state.settings.autostart ? 'checked' : ''} /><span class="slider"></span></label></div></div><div class="panel"><div class="panel-title"><div><h2>随机抽人设置</h2><p>调整抽取结果的显示样式。</p></div></div><div class="setting-row"><div><h3>结果字号</h3><p>抽取结果显示的字体大小，默认 30px</p></div><input id="draw-font-size" type="number" min="16" max="72" value="${state.settings.drawResultFontSize || 30}" style="width:80px" /></div></div></div>${namesSection()}${scheduleSection()}${helpView()}</div></div>`;
 }
-const views = { home: homeView, random: randomView, clock: clockView, assignments: assignmentsView, settings: settingsView };
+const views = { home: homeView, random: randomView, clock: clockView, schedule: scheduleView, assignments: assignmentsView, settings: settingsView };
 
 function bindView() {
   document.querySelectorAll('[data-go]').forEach((element) => element.addEventListener('click', () => navigate(element.dataset.go)));
   document.querySelectorAll('[data-settings-tab]').forEach((element) => element.addEventListener('click', () => { settingsTab = element.dataset.settingsTab; render(); if (settingsTab === 'general') api.getAutostartStatus().then((status) => { const copy = document.querySelector('#autostart-copy'); if (copy) copy.textContent = status ? '系统当前已开启' : '系统当前未开启'; }); }));
+  document.querySelector('[data-settings-tab="schedule"]')?.addEventListener('click', () => navigate('schedule'));
   document.querySelectorAll('[data-help]').forEach((element) => element.addEventListener('click', () => { helpTopic = element.dataset.help; settingsTab = 'help'; navigate('settings'); }));
   document.querySelectorAll('[data-help-topic]').forEach((element) => element.addEventListener('click', () => { helpTopic = element.dataset.helpTopic; render(); }));
   document.querySelector('[data-action="new-assignment"]')?.addEventListener('click', () => { editingAssignmentId = 'new'; render(); });
@@ -371,7 +378,7 @@ function bindView() {
       ).join('') + (state.settings.drawContinuous ? `<div style="margin-top:12px;color:var(--muted);font-size:14px">剩余 ${result.remaining} 人</div>` : '');
     }
     
-    await save();
+    state = await api.getState();
     render();
   });
   
@@ -413,7 +420,6 @@ function bindView() {
   document.querySelector('#desktop-clock-toggle')?.addEventListener('change', async (event) => { state.settings.desktopWidgetEnabled = event.target.checked; await save(); showToast(event.target.checked ? '已开启桌面时钟显示' : '已关闭桌面时钟显示'); });
   document.querySelector('#autostart-toggle')?.addEventListener('change', async (event) => { const actual = await api.setAutostart(event.target.checked); state.settings.autostart = actual; event.target.checked = actual; const copy = document.querySelector('#autostart-copy'); if (copy) copy.textContent = actual ? '系统当前已开启' : '系统当前未开启'; showToast(actual ? '已开启开机自启动' : '已关闭开机自启动'); });
   document.querySelector('#clock-autostart-toggle')?.addEventListener('change', async (event) => { const actual = await api.setAutostart(event.target.checked); state.settings.autostart = actual; event.target.checked = actual; await save(); showToast(actual ? '已开启开机自启动' : '已关闭开机自启动'); });
-  document.querySelector('[data-action="import-markdown"]')?.addEventListener('click', async () => { const text = await api.importMarkdown(); if (text) { const preview = document.querySelector('#markdown-preview'); if (preview) preview.innerHTML = markdownToHtml(text); showToast('Markdown 已载入'); } });
   document.querySelector('[data-action="check-updates"]')?.addEventListener('click', async () => { await api.checkForUpdates(); showToast('已打开更新页面'); });
   document.querySelector('[data-action="pick-ringtone"]')?.addEventListener('click', async () => { const selected = await api.pickRingtone(); if (selected) { state.settings.ringtonePath = selected; await save(); showToast('铃声已更新'); } });
   document.querySelector('#name-form')?.addEventListener('submit', onNameSubmit);
@@ -424,6 +430,7 @@ function bindView() {
   document.querySelector('#schedule-form [name="subject"]')?.addEventListener('change', (event) => { document.querySelector('#schedule-form [name="teacher"]').value = state.settings.subjectTeachers?.[event.target.value] || ''; });
   document.querySelector('[data-clock-tools]')?.addEventListener('click', () => api.openClockTools());
   document.querySelector('[data-clock-settings]')?.addEventListener('click', () => api.openClockSettings());
+  document.querySelector('[data-clock-update]')?.addEventListener('click', async () => { const result = await api.checkForUpdates(); showToast(result?.status === 'up-to-date' ? '当前已是最新版本' : result?.ok ? '发现新版本' : result?.error || '检查更新失败'); });
   document.querySelector('[data-action="import-schedule"]')?.addEventListener('click', importSchedule);
   document.querySelector('[data-action="cancel-schedule"]')?.addEventListener('click', () => { editingScheduleId = null; render(); });
   document.querySelectorAll('[data-edit-schedule]').forEach((element) => element.addEventListener('click', () => { editingScheduleId = element.dataset.editSchedule; render(); }));
@@ -635,7 +642,25 @@ function processInline(text) {
   return text;
 }
 
-function startClock() { clearInterval(clockTimer); let lastDay = ToolkitSchedule.weekday(new Date()); const tick = () => { const now = new Date(); const currentDay = ToolkitSchedule.weekday(now); if (currentDay !== lastDay) { lastDay = currentDay; render(); return; } const summary = document.querySelector('#clock-summary'); if (summary) summary.innerHTML = clockSummaryMarkup(); headerTime.textContent = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now); const dateElement = document.querySelector('#clock-date'); const timeElement = document.querySelector('#clock-time'); if (dateElement) dateElement.textContent = formatDate(now); if (timeElement) timeElement.textContent = now.toLocaleTimeString('zh-CN', { hour12: false }); }; tick(); clockTimer = setInterval(tick, 1000); }
+function refreshClockSchedule(now) {
+  const status = ToolkitSchedule.summary(state.schedule, now);
+  const currentIds = new Set();
+  if (status.label === '上课中' && status.item) currentIds.add(status.item.id);
+  if (status.label === '课间') {
+    if (status.item) currentIds.add(status.item.id);
+    if (status.next) currentIds.add(status.next.id);
+  }
+
+  const today = ToolkitSchedule.weekday(now);
+  document.querySelectorAll('.lesson-cell[data-lesson-id]').forEach((cell) => {
+    cell.classList.toggle('current', cell.dataset.lessonDay === String(today) && currentIds.has(cell.dataset.lessonId));
+  });
+  document.querySelectorAll('.day-header[data-day]').forEach((header) => {
+    header.classList.toggle('today', header.dataset.day === String(today));
+  });
+}
+
+function startClock() { clearInterval(clockTimer); let lastDay = ToolkitSchedule.weekday(new Date()); const tick = () => { const now = new Date(); const currentDay = ToolkitSchedule.weekday(now); if (currentDay !== lastDay) { lastDay = currentDay; render(); return; } const summary = document.querySelector('#clock-summary'); if (summary) summary.innerHTML = clockSummaryMarkup(); refreshClockSchedule(now); headerTime.textContent = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now); const dateElement = document.querySelector('#clock-date'); const timeElement = document.querySelector('#clock-time'); if (dateElement) dateElement.textContent = formatDate(now); if (timeElement) timeElement.textContent = now.toLocaleTimeString('zh-CN', { hour12: false }); }; tick(); clockTimer = setInterval(tick, 1000); }
 
 document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click', () => navigate(item.dataset.view)));
 backButton.addEventListener('click', () => { currentView = previousView || 'home'; render(); });

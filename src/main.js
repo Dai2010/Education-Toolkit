@@ -8,15 +8,27 @@ const autostart = require('./autostart.js')(app);
 // 单实例锁
 const gotTheLock = app.requestSingleInstanceLock();
 
+function showToolkit(view = 'clock') {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return false;
+  }
+
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  app.focus({ steal: true });
+  mainWindow.moveTop();
+  mainWindow.focus();
+  mainWindow.webContents.send('toolkit:navigate', view);
+  return true;
+}
+
 if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // 当运行第二个实例时，聚焦到已存在的窗口
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
+    // 第二次从快捷方式启动时，主页面可能仍被隐藏到托盘；必须显式恢复它。
+    if (app.isReady()) showToolkit();
+    else app.whenReady().then(() => showToolkit());
   });
 }
 
@@ -181,9 +193,9 @@ function setAutostart(enabled) {
 }
 
 function drawSingle(list, continuous) {
-  const available = continuous 
-    ? list.filter((person, index) => !state.drawnIds.includes(index))
-    : list;
+  const available = continuous
+    ? list.map((person, index) => ({ person, index })).filter(({ index }) => !state.drawnIds.includes(index))
+    : list.map((person, index) => ({ person, index }));
 
   if (!available.length) {
     if (continuous) {
@@ -192,18 +204,15 @@ function drawSingle(list, continuous) {
     return { error: '名单为空' };
   }
 
-  const selected = available[Math.floor(Math.random() * available.length)];
-  
+  const selectedEntry = available[Math.floor(Math.random() * available.length)];
+
   if (continuous) {
-    const originalIndex = list.findIndex(p => p.name === selected.name && p.group === selected.group);
-    if (originalIndex !== -1) {
-      state.drawnIds.push(originalIndex);
-    }
+    state.drawnIds.push(selectedEntry.index);
   }
 
   return {
     mode: 'single',
-    selected,
+    selected: selectedEntry.person,
     remaining: continuous ? list.length - state.drawnIds.length : list.length,
     total: list.length
   };
@@ -215,9 +224,9 @@ function drawGroups(list, groupSize, groupCount, continuous) {
   if (groupSize > list.length) return { error: '每组人数不能超过名单总人数' };
 
   const requested = groupSize * groupCount;
-  const available = continuous 
-    ? list.filter((_, index) => !state.drawnIds.includes(index))
-    : list;
+  const available = continuous
+    ? list.map((person, index) => ({ person, index })).filter(({ index }) => !state.drawnIds.includes(index))
+    : list.map((person, index) => ({ person, index }));
 
   if (continuous && requested > available.length) {
     return { 
@@ -235,13 +244,12 @@ function drawGroups(list, groupSize, groupCount, continuous) {
     const group = [];
     for (let j = 0; j < groupSize; j++) {
       const randomIndex = Math.floor(Math.random() * workingList.length);
-      const selected = workingList.splice(randomIndex, 1)[0];
-      group.push(selected);
+      const selectedEntry = workingList.splice(randomIndex, 1)[0];
+      group.push(selectedEntry.person);
       
       if (continuous) {
-        const originalIndex = list.findIndex(p => p.name === selected.name && p.group === selected.group);
-        if (originalIndex !== -1 && !state.drawnIds.includes(originalIndex)) {
-          state.drawnIds.push(originalIndex);
+        if (!state.drawnIds.includes(selectedEntry.index)) {
+          state.drawnIds.push(selectedEntry.index);
         }
       }
     }
@@ -271,12 +279,7 @@ function registerIpc() {
     const result = await dialog.showOpenDialog(mainWindow, { title: '选择提醒铃声', properties: ['openFile'], filters: [{ name: '音频文件', extensions: ['mp3', 'wav', 'ogg', 'm4a'] }] });
     return result.canceled ? null : result.filePaths[0];
   });
-  ipcMain.handle('import-markdown', async () => {
-    const result = await dialog.showOpenDialog(mainWindow, { title: '导入 Markdown', properties: ['openFile'], filters: [{ name: 'Markdown 文件', extensions: ['md', 'markdown'] }] });
-    if (result.canceled) return null;
-    return fs.readFile(result.filePaths[0], 'utf8');
-  });
-  ipcMain.handle('check-for-updates', async () => { await shell.openExternal('https://github.com/Dai2010/Education-Toolkit/releases/latest'); return { ok: true }; });
+  ipcMain.handle('check-for-updates', () => elegantClock.checkForUpdates());
   ipcMain.handle('import-json', async () => {
     const result = await dialog.showOpenDialog(mainWindow, { title: '导入 JSON', properties: ['openFile'], filters: [{ name: 'JSON 文件', extensions: ['json'] }] });
     if (result.canceled) return null;
@@ -285,12 +288,12 @@ function registerIpc() {
   ipcMain.handle('get-autostart-status', () => autostart.get());
   ipcMain.handle('set-autostart', async (_event, enabled) => { setAutostart(enabled); await saveState(); return autostart.get(); });
   ipcMain.handle('show-item-in-folder', (_event, filePath) => shell.showItemInFolder(filePath));
-  ipcMain.handle('open-toolkit', () => { mainWindow?.show(); mainWindow?.focus(); return true; });
-  ipcMain.handle('toolkit:open', () => { mainWindow?.webContents.send('toolkit:navigate', 'clock'); mainWindow?.show(); mainWindow?.focus(); return true; });
+  ipcMain.handle('open-toolkit', () => showToolkit('clock'));
+  ipcMain.handle('toolkit:open', () => showToolkit('clock'));
   ipcMain.handle('toolkit:clock-settings', () => { elegantClock.settings(); return true; });
   ipcMain.handle('toolkit:clock-tools', () => { elegantClock.tools(); return true; });
   ipcMain.handle('toolkit:get-schedule-state', () => state.schedule);
-  ipcMain.handle('random-draw', (_event, options = {}) => {
+  ipcMain.handle('random-draw', async (_event, options = {}) => {
     const list = Array.isArray(state.names) ? state.names.filter((person) => person?.name) : [];
     if (!list.length) return { error: '名单为空，请先在设置中添加名单' };
 
@@ -300,12 +303,17 @@ function registerIpc() {
     const continuous = options.continuous !== undefined ? options.continuous : state.settings.drawContinuous;
 
     try {
+      let result;
       if (mode === 'single') {
-        return drawSingle(list, continuous);
+        result = drawSingle(list, continuous);
       } else if (mode === 'group') {
-        return drawGroups(list, groupSize, groupCount, continuous);
+        result = drawGroups(list, groupSize, groupCount, continuous);
+      } else {
+        return { error: '未知的抽取模式' };
       }
-      return { error: '未知的抽取模式' };
+      await saveState();
+      sendState();
+      return result;
     } catch (error) {
       return { error: error.message };
     }
@@ -347,6 +355,7 @@ app.whenReady().then(async () => {
   registerIpc();
   createWindow();
   elegantClock.initialize({
+    getVersion: () => app.getVersion(),
     iconPath: path.join(__dirname, '..', 'build', 'icon.png'),
     ringtonePath: () => state.settings.ringtonePath || path.join(__dirname, '..', 'assets-lofi-beats.mp3'),
     getAutostartInfo: () => ({ supported: true, enabled: autostart.get() }),
@@ -356,8 +365,10 @@ app.whenReady().then(async () => {
     getThemeColor: () => state.settings.themeColor,
     startHidden: true
   });
+  elegantClock.sync();
   elegantClock.compact();
-  mainWindow.once('ready-to-show', () => { mainWindow.show(); mainWindow.webContents.send('toolkit:navigate', 'clock'); });
+  // 启动时只显示桌面时钟，主工具包窗口由点击时钟或托盘入口打开。
+  mainWindow.once('ready-to-show', () => { mainWindow.webContents.send('toolkit:navigate', 'clock'); });
   if (state.settings.homeworkWidgetEnabled) createWidget();
   reminderTimer = setInterval(reminderTick, 1000);
   reminderTick();

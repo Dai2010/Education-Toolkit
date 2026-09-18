@@ -11,15 +11,6 @@ const elements = {
   fontFamilyInput: document.querySelector('#font-family-input'),
   fontSizeInput: document.querySelector('#font-size-input'),
   fontSizeValue: document.querySelector('#font-size-value'),
-  fontColorInput: document.querySelector('#font-color-input'),
-  backgroundColorInput: document.querySelector('#background-color-input'),
-  backgroundColorHexInput: document.querySelector('#background-color-hex-input'),
-  backgroundColorError: document.querySelector('#background-color-error'),
-  ringtoneLabel: document.querySelector('#ringtone-label'),
-  ringtoneChoose: document.querySelector('#ringtone-choose'),
-  ringtoneTest: document.querySelector('#ringtone-test'),
-  ringtoneStop: document.querySelector('#ringtone-stop'),
-  ringtoneDefault: document.querySelector('#ringtone-default'),
   aboutOpen: document.querySelector('#about-open')
 };
 
@@ -65,15 +56,6 @@ function renderSettings(settings = {}) {
   elements.fontFamilyInput.value = settings.fontFamily || '';
   elements.fontSizeInput.value = String(settings.fontSize ?? 82);
   elements.fontSizeValue.textContent = `${settings.fontSize ?? 82}px`;
-  elements.fontColorInput.value = normalizeColor(settings.fontColor, '#f8fbff');
-  const backgroundColor = normalizeColor(settings.backgroundColor, '#101623');
-  elements.backgroundColorInput.value = backgroundColor;
-  elements.backgroundColorHexInput.value = backgroundColor.toUpperCase();
-  elements.backgroundColorHexInput.removeAttribute('aria-invalid');
-  elements.backgroundColorError.hidden = true;
-  elements.ringtoneLabel.textContent = settings.ringtone?.type === 'custom'
-    ? `自定义：${settings.ringtone.name || '自定义铃声'}`
-    : '默认：ringtone_default.mp3';
   elements.appearanceStatus.textContent = `${settings.transparent === false ? 100 : settings.opacity ?? 78}% · ${settings.fontSize ?? 82}px`;
 }
 
@@ -93,34 +75,35 @@ function updateSettings(partialSettings) {
 function renderBackgroundColorValidation(color) {
   const valid = Boolean(color);
   if (valid) {
-    elements.backgroundColorHexInput.removeAttribute('aria-invalid');
+  elements.backgroundColorHexInput?.removeAttribute('aria-invalid');
   } else {
-    elements.backgroundColorHexInput.setAttribute('aria-invalid', 'true');
+  elements.backgroundColorHexInput?.setAttribute('aria-invalid', 'true');
   }
-  elements.backgroundColorError.hidden = valid;
+  if (elements.backgroundColorError) elements.backgroundColorError.hidden = valid;
 }
 
 function updateBackgroundColorFromText() {
-  const color = parseHexColor(elements.backgroundColorHexInput.value);
+  const color = parseHexColor(elements.backgroundColorHexInput?.value);
   renderBackgroundColorValidation(color);
 
   if (!color) {
     return;
   }
 
-  elements.backgroundColorHexInput.value = color;
-  elements.backgroundColorInput.value = color;
+  if (elements.backgroundColorHexInput) elements.backgroundColorHexInput.value = color;
+  if (elements.backgroundColorInput) elements.backgroundColorInput.value = color;
   updateSettings({ backgroundColor: color });
 }
 
 function restoreBackgroundColorInput() {
   const color = normalizeColor(currentState?.settings?.backgroundColor, '#101623');
-  elements.backgroundColorInput.value = color;
-  elements.backgroundColorHexInput.value = color.toUpperCase();
+  if (elements.backgroundColorInput) elements.backgroundColorInput.value = color;
+  if (elements.backgroundColorHexInput) elements.backgroundColorHexInput.value = color.toUpperCase();
   renderBackgroundColorValidation(color);
 }
 
 function renderAutostartInfo(info) {
+  if (!elements.autostartToggle || !elements.autostartStatus) return;
   const supported = Boolean(info?.supported);
   const enabled = Boolean(info?.enabled);
   const method = info?.method || '未知方式';
@@ -134,6 +117,7 @@ function renderAutostartInfo(info) {
 }
 
 async function refreshAutostartInfo() {
+  if (!elements.autostartToggle || !elements.autostartStatus) return;
   try {
     renderAutostartInfo(await shell?.getAutostart?.());
   } catch {
@@ -218,7 +202,7 @@ function stopRingtonePreview() {
   previewAudio.pause();
   previewAudio.currentTime = 0;
   previewAudio = undefined;
-  elements.ringtoneStop.disabled = true;
+  if (elements.ringtoneStop) elements.ringtoneStop.disabled = true;
 }
 
 function playRingtonePreview() {
@@ -243,7 +227,7 @@ function playRingtonePreview() {
 function bindEvents() {
   elements.transparentToggle.addEventListener('change', () => updateSettings({ transparent: elements.transparentToggle.checked }));
   elements.alwaysTopToggle.addEventListener('change', () => updateSettings({ alwaysOnTop: elements.alwaysTopToggle.checked }));
-  elements.autostartToggle.addEventListener('change', () => updateAutostartSetting(elements.autostartToggle.checked));
+  elements.autostartToggle?.addEventListener('change', () => updateAutostartSetting(elements.autostartToggle.checked));
   elements.fontFamilyInput.addEventListener('change', () => updateSettings({ fontFamily: elements.fontFamilyInput.value }));
   elements.opacityInput.addEventListener('input', () => {
     elements.opacityValue.textContent = `${elements.opacityInput.value}%`;
@@ -253,32 +237,37 @@ function bindEvents() {
     elements.fontSizeValue.textContent = `${elements.fontSizeInput.value}px`;
     updateSettings({ fontSize: elements.fontSizeInput.value });
   });
-  elements.fontColorInput.addEventListener('input', () => updateSettings({ fontColor: elements.fontColorInput.value }));
-  elements.backgroundColorInput.addEventListener('input', () => {
+  elements.fontColorInput?.addEventListener('input', () => updateSettings({ fontColor: elements.fontColorInput.value }));
+  elements.backgroundColorInput?.addEventListener('input', () => {
     const color = elements.backgroundColorInput.value.toUpperCase();
     elements.backgroundColorHexInput.value = color;
     renderBackgroundColorValidation(color);
     updateSettings({ backgroundColor: color });
   });
-  elements.backgroundColorHexInput.addEventListener('input', updateBackgroundColorFromText);
-  elements.backgroundColorHexInput.addEventListener('change', () => {
+  elements.backgroundColorHexInput?.addEventListener('input', updateBackgroundColorFromText);
+  elements.backgroundColorHexInput?.addEventListener('change', () => {
     if (!parseHexColor(elements.backgroundColorHexInput.value)) {
       restoreBackgroundColorInput();
     }
   });
-  elements.backgroundColorHexInput.addEventListener('keydown', (event) => {
+  elements.backgroundColorHexInput?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       elements.backgroundColorHexInput.blur();
     }
   });
-  elements.ringtoneChoose.addEventListener('click', () => chooseRingtone().catch(() => {
+  elements.ringtoneChoose?.addEventListener('click', () => chooseRingtone().catch(() => {
     elements.ringtoneLabel.textContent = '选择铃声失败';
   }));
-  elements.ringtoneTest.addEventListener('click', playRingtonePreview);
-  elements.ringtoneStop.addEventListener('click', stopRingtonePreview);
-  elements.ringtoneDefault.addEventListener('click', () => useDefaultRingtone().catch(() => {}));
+  elements.ringtoneTest?.addEventListener('click', playRingtonePreview);
+  elements.ringtoneStop?.addEventListener('click', stopRingtonePreview);
+  elements.ringtoneDefault?.addEventListener('click', () => useDefaultRingtone().catch(() => {}));
   elements.aboutOpen.addEventListener('click', () => shell?.openAbout?.()?.catch?.(() => {}));
   shell?.onStateChanged?.(renderState);
+  shell?.onThemeChanged?.((color) => {
+    if (/^#[0-9a-f]{6}$/i.test(color || '')) {
+      document.documentElement.style.setProperty('--accent', color);
+    }
+  });
 }
 
 async function init() {

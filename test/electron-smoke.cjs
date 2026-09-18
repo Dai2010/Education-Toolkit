@@ -28,8 +28,21 @@ app.whenReady().then(async () => {
   try {
     const main = await until(() => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL() === require('node:url').pathToFileURL(path.join(__dirname, '../src/index.html')).href));
     const clock = await until(() => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().endsWith('/elegant-clock/src/index.html')));
-    await until(() => main.webContents.executeJavaScript("Boolean(document.querySelector('.module-grid'))"));
+    await until(() => main.webContents.executeJavaScript("Boolean(document.querySelector('.clock-board'))"));
     await until(() => clock.webContents.executeJavaScript("typeof ToolkitSchedule === 'object' && Boolean(document.querySelector('#next-class').textContent)"));
+    if (process.env.TOOLKIT_TEST_NAMES_FILE) {
+      const imported = JSON.parse(fs.readFileSync(process.env.TOOLKIT_TEST_NAMES_FILE, 'utf8'));
+      const people = imported.lists?.[0]?.people || imported.names || imported.students || imported;
+      await main.webContents.executeJavaScript(`(async () => {
+        const importedNames = ${JSON.stringify(people)};
+        const names = importedNames.map((person) => ({ name: String(person.name || person.student || '').trim(), group: String(person.group || '').trim() })).filter((person) => person.name);
+        state = await api.saveState({ ...state, names, nameLists: [{ name: '测试名单', names }] });
+        navigate('random');
+        return true;
+      })()`);
+      assert.equal(await main.webContents.executeJavaScript('state.names.length'), people.length);
+      assert.equal(await main.webContents.executeJavaScript("Boolean(document.querySelector('.draw-result'))"), true);
+    }
     const example = { schedule: [
       { weekday: 1, id: 'mon-am', subject: '数学', course: '数学', start: '08:00', duration: 40, breakDuration: 10 },
       { weekday: 1, id: 'mon-pm', subject: '艺术', course: '艺术', start: '14:00', duration: 40, breakDuration: 10 },
@@ -59,7 +72,7 @@ app.whenReady().then(async () => {
       await until(() => clock.webContents.executeJavaScript(`toolkitLessons.length === ${normalized.schedule.length}`));
       for (let day = 1; day <= 7; day++) {
         const expected = normalized.schedule.filter((r) => r.weekday == null || r.weekday === day);
-        const rendered = await main.webContents.executeJavaScript(`(() => { scheduleDay = ${day}; settingsTab = 'schedule'; navigate('settings'); return document.querySelectorAll('[data-delete-schedule]').length; })()`);
+        const rendered = await main.webContents.executeJavaScript(`(() => { scheduleDay = ${day}; navigate('schedule'); return document.querySelectorAll('[data-delete-schedule]').length; })()`);
         assert.equal(rendered, expected.length);
       }
       for (const row of normalized.schedule) {
@@ -68,11 +81,11 @@ app.whenReady().then(async () => {
         const result = await main.webContents.executeJavaScript(`(() => {
           const NativeDate = Date;
           window.Date = class extends NativeDate { constructor(...args) { super(...(args.length ? args : [${date}])); } };
-          try { navigate('clock'); return { course: ToolkitSchedule.summary(state.schedule).item?.course, rows: document.querySelectorAll('.schedule-table tbody tr').length, text: document.querySelector('#clock-summary').textContent }; }
+          try { navigate('clock'); const text = document.querySelector('#clock-summary').textContent; navigate('schedule'); return { course: ToolkitSchedule.summary(state.schedule).item?.course, rows: document.querySelectorAll('.schedule-row').length, text }; }
           finally { window.Date = NativeDate; }
         })()`);
         assert.equal(result.course, row.course);
-        assert.equal(result.rows, normalized.schedule.filter((r) => r.weekday == null || r.weekday === row.weekday).length);
+        assert.equal(result.rows, new Set(normalized.schedule.map((r) => r.start)).size);
         assert.ok(result.text.includes(row.course));
         const text = await clock.webContents.executeJavaScript(`(() => { renderNextClass(new Date(${date})); return document.querySelector('#next-class').textContent; })()`);
         assert.ok(text.includes('上课中') && text.includes(row.course));

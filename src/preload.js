@@ -8,7 +8,6 @@ contextBridge.exposeInMainWorld('educationToolkit', {
   saveState: (state) => ipcRenderer.invoke('save-state', state),
   pickRingtone: () => ipcRenderer.invoke('pick-ringtone'),
   importJson: () => ipcRenderer.invoke('import-json'),
-  importMarkdown: () => ipcRenderer.invoke('import-markdown'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   moveHomeworkWidget: (x, y) => ipcRenderer.invoke('move-homework-widget', x, y),
   getAutostartStatus: () => ipcRenderer.invoke('get-autostart-status'),

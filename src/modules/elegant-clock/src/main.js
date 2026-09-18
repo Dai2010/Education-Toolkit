@@ -76,6 +76,11 @@ const watchdogRestartDelayMs = 30_000;
 const rendererRecoveryLockMs = 30_000;
 const watchdogSmokeTestTimeoutMs = 15_000;
 const watchdogSmokeTestMode = process.argv.includes('--watchdog-smoke-test');
+const toolkitUpdateConfig = {
+  repository: 'Dai2010/Education-Toolkit',
+  assetPattern: /-x64\.exe$/i,
+  applicationName: 'Education Toolkit'
+};
 
 const defaultSettings = {
   transparent: true,
@@ -129,7 +134,7 @@ const appState = {
 const platformWindowConfig = {
   win32: {
     compactWidth: 420,
-    compactHeight: 168,
+    compactHeight: 220,
     trayIconSize: 16
   },
   linux: {
@@ -1033,13 +1038,14 @@ async function performUpdateCheck() {
   timeout.unref?.();
 
   const operation = (async () => {
-    const release = await fetchLatestRelease((...args) => net.fetch(...args), abortController.signal);
+    const release = await fetchLatestRelease((...args) => net.fetch(...args), abortController.signal, host ? toolkitUpdateConfig : undefined);
     latestUpdateInfo = createUpdateInfo(
       release,
-      app.getVersion(),
+      host ? host.getVersion?.() || app.getVersion() : app.getVersion(),
       process.platform,
       process.arch,
-      getLinuxDistributionIds()
+      getLinuxDistributionIds(),
+      host ? toolkitUpdateConfig : undefined
     );
 
     return {
@@ -1074,6 +1080,18 @@ async function checkForUpdatesOnLaunch() {
     }
   } catch {
     // Update checks must not delay or interrupt normal startup.
+  }
+}
+
+async function checkForUpdates() {
+  try {
+    const result = await performUpdateCheck();
+    if (result.status === 'update-available' && !isQuitting) {
+      createUpdateWindow();
+    }
+    return { ok: true, ...result };
+  } catch {
+    return { ok: false, error: '检查更新失败，请检查网络连接后重试' };
   }
 }
 
@@ -1124,7 +1142,7 @@ async function launchDownloadedUpdate(downloadPath) {
 
   sendUpdateProgress({
     phase: 'complete',
-    message: '安装程序已启动，桌面时钟即将退出'
+    message: '安装程序已启动，应用即将退出'
   });
 
   const quitTimer = setTimeout(() => {
@@ -1140,8 +1158,8 @@ async function downloadAndLaunchUpdate(asset, source, signal) {
   const usesProxy = source === 'proxy';
   const sourceName = usesProxy ? 'ghfast.top' : 'GitHub';
   const downloadUrl = usesProxy
-    ? getProxyDownloadUrl(asset.downloadUrl)
-    : getDirectDownloadUrl(asset.downloadUrl);
+    ? getProxyDownloadUrl(asset.downloadUrl, host ? toolkitUpdateConfig : undefined)
+    : getDirectDownloadUrl(asset.downloadUrl, host ? toolkitUpdateConfig : undefined);
 
   try {
     sendUpdateProgress({
@@ -1300,22 +1318,49 @@ function getCompactBounds(window) {
   });
 }
 
+async function fitCompactWindow(window = mainWindow) {
+  if (!window || window.isDestroyed() || !compactMode) return false;
+
+  const { compactWidth } = getPlatformWindowConfig();
+  try {
+    const contentSize = await window.webContents.executeJavaScript(`(() => {
+      const panel = document.querySelector('#clock-panel');
+      if (!panel) return null;
+      const rect = panel.getBoundingClientRect();
+      return { width: Math.ceil(rect.width), height: Math.ceil(rect.height) };
+    })()`);
+    if (!contentSize) return false;
+
+    const bounds = window.getBounds();
+    const width = Math.min(620, Math.max(compactWidth, contentSize.width + 28));
+    const height = Math.min(360, Math.max(150, contentSize.height + 24));
+    window.setBounds(clampBoundsToWorkArea({
+      x: bounds.x + (bounds.width - width) / 2,
+      y: bounds.y + (bounds.height - height) / 2,
+      width,
+      height
+    }), false);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function requestFullUi(window = mainWindow) {
   if (!window || window.isDestroyed()) {
     return;
   }
 
-  if (compactMode) {
-    setWindowCompactMode(window, false);
+  // 桌面时钟只保留常驻紧凑模式；设置和工具通过独立窗口打开。
+  if (!compactMode) {
+    setWindowCompactMode(window, true);
   }
 
   if (window.isMinimized()) {
     window.restore();
   }
 
-  window.show();
-  window.focus();
-  window.webContents.send('window:restore-full-ui');
+  window.showInactive();
 }
 
 function requestOrCreateFullUi() {
@@ -1335,10 +1380,6 @@ function requestOrCreateFullUi() {
 function hideWindowToTray(window = mainWindow) {
   if (!window || window.isDestroyed()) {
     return false;
-  }
-
-  if (compactMode) {
-    setWindowCompactMode(window, false);
   }
 
   if (!tray) {
@@ -1395,7 +1436,7 @@ function setWindowCompactMode(window, enabled) {
     }
 
     applyPlatformCompactMode(window, true);
-    window.setMinimumSize(getPlatformWindowConfig().compactWidth, getPlatformWindowConfig().compactHeight);
+    window.setMinimumSize(getPlatformWindowConfig().compactWidth, 140);
     window.setBounds(getCompactBounds(window), false);
     window.showInactive();
     return true;
@@ -1767,9 +1808,7 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.center();
     applyWindowSettings();
-    if (host?.startHidden) {
-      mainWindow.hide();
-    } else if (startInCompactMode) {
+    if (startInCompactMode || !host?.startHidden) {
       setWindowCompactMode(mainWindow, true);
       mainWindow.webContents.send('window:compact-state', true);
     } else {
@@ -1834,6 +1873,7 @@ function createManagedWindow(kind, options) {
   });
   window.webContents.once('did-finish-load', () => {
     window.webContents.send('state:changed', getStateSnapshot());
+    window.webContents.send('toolkit:theme', host?.getThemeColor?.());
   });
   window.webContents.setWindowOpenHandler(({ url }) => {
     openExternalUrlSafely(url);
@@ -1997,15 +2037,18 @@ module.exports = {
     startTimerEngine();
     createTray();
     startWatchdogProcess();
+    setTimeout(() => checkForUpdatesOnLaunch(), 3000).unref?.();
   },
   show: requestOrCreateFullUi,
   compact() { startInCompactMode = true; requestOrCreateFullUi(); },
   hide() { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close(); },
   settings: createSettingsWindow,
   tools: createToolsWindow,
+  checkForUpdates,
   sync() {
     mainWindow?.webContents.send('toolkit:schedule', { schedule: host.getScheduleState(), subjectTeachers: host.getSubjectTeachers?.() || {} });
     mainWindow?.webContents.send('toolkit:theme', host.getThemeColor?.());
+    settingsWindow?.webContents.send('toolkit:theme', host.getThemeColor?.());
     updateSettings({ ringtone: createRingtonePayload(host.ringtonePath()) });
   }
 };
@@ -2023,34 +2066,17 @@ ipcMain.handle('app:get-about-info', () => getAboutInfo());
 ipcMain.handle('app:get-update-info', () => latestUpdateInfo ? clone(latestUpdateInfo) : null);
 
 ipcMain.handle('app:check-for-updates', async (event) => {
-  if (host) {
-    await electronShell.openExternal('https://github.com/Dai2010/Education-Toolkit/releases/latest');
-    return { ok: true, status: 'up-to-date' };
-  }
-  if (getWindowFromEvent(event) !== settingsWindow) {
+  if (!host && getWindowFromEvent(event) !== settingsWindow) {
     return {
       ok: false,
       error: '只能从设置窗口检查更新'
     };
   }
 
-  try {
-    const result = await performUpdateCheck();
-    if (result.status === 'update-available' && !isQuitting) {
-      createUpdateWindow();
-    }
-
-    return { ok: true, ...result };
-  } catch {
-    return {
-      ok: false,
-      error: '检查更新失败，请检查网络连接后重试'
-    };
-  }
+  return checkForUpdates();
 });
 
 ipcMain.handle('app:start-direct-update', (event) => {
-  if (host) return { ok: false, error: '请通过 Education Toolkit 更新整个工具包' };
   if (getWindowFromEvent(event) !== updateWindow) {
     return {
       ok: false,
@@ -2062,7 +2088,6 @@ ipcMain.handle('app:start-direct-update', (event) => {
 });
 
 ipcMain.handle('app:start-proxy-update', (event) => {
-  if (host) return { ok: false, error: '请通过 Education Toolkit 更新整个工具包' };
   if (getWindowFromEvent(event) !== updateWindow) {
     return {
       ok: false,
@@ -2188,6 +2213,8 @@ ipcMain.on('window:toggle-maximize', (event) => {
 });
 
 ipcMain.handle('window:set-compact-mode', (event, enabled) => setWindowCompactMode(getWindowFromEvent(event), enabled));
+
+ipcMain.handle('window:fit-compact', (event) => fitCompactWindow(getWindowFromEvent(event)));
 
 ipcMain.handle('window:get-compact-mode', (event) => (
   getWindowFromEvent(event) === mainWindow && compactMode

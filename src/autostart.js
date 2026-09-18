@@ -6,7 +6,7 @@ module.exports = function createAutostart(app, platform = process.platform) {
   // 修复：确保在打包后使用正确的执行路径
   const execPath = app.isPackaged ? process.execPath : process.execPath;
   const args = app.isPackaged ? ['--autostart'] : [app.getAppPath(), '--autostart'];
-  const options = { path: execPath, args, name: 'Education Toolkit' };
+  const options = { path: execPath, args, name: 'Education Toolkit', openAsHidden: false };
   const file = path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'autostart', 'education-toolkit.desktop');
   const quote = (value) => '"' + String(value).replace(/[\\"`$]/g, '\\$&') + '"';
   const command = [execPath, ...args].map(quote).join(' ');
@@ -20,8 +20,13 @@ module.exports = function createAutostart(app, platform = process.platform) {
       } catch { return false; }
     }
     // Windows 和 macOS
-    const settings = app.getLoginItemSettings(options);
-    return Boolean(settings.openAtLogin);
+    try {
+      const settings = app.getLoginItemSettings(options);
+      return Boolean(settings.openAtLogin);
+    } catch (error) {
+      console.error('Failed to read login item:', error);
+      return false;
+    }
   }
   
   function set(enabled) {

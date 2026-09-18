@@ -71,67 +71,6 @@
           </div>
         </section>
 
-        <section class="settings-module" aria-labelledby="color-settings-heading">
-          <header class="settings-module-header">
-            <h2 id="color-settings-heading">颜色</h2>
-          </header>
-          <div class="input-grid two-cols color-settings-grid">
-            <label>
-              字体颜色
-              <input id="font-color-input" type="color" value="#f8fbff" />
-            </label>
-            <div class="color-field">
-              <label for="background-color-hex-input">背景颜色</label>
-              <div class="color-input-row">
-                <input id="background-color-input" type="color" value="#101623" aria-label="选择背景颜色" />
-                <input
-                  id="background-color-hex-input"
-                  class="hex-color-input"
-                  type="text"
-                  value="#101623"
-                  maxlength="7"
-                  spellcheck="false"
-                  autocomplete="off"
-                  aria-describedby="background-color-error"
-                />
-              </div>
-              <span id="background-color-error" class="field-message" hidden>请输入 #RRGGBB 格式</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="settings-module" aria-labelledby="ringtone-settings-heading">
-          <header class="settings-module-header">
-            <h2 id="ringtone-settings-heading">铃声</h2>
-          </header>
-          <div class="input-grid">
-            <label>
-              当前铃声
-              <span id="ringtone-label" class="readonly-field">默认：ringtone_default.mp3</span>
-            </label>
-            <div class="settings-field">
-              <span>铃声操作</span>
-              <span class="mini-button-row ringtone-actions">
-                <button id="ringtone-choose" type="button">选择</button>
-                <button id="ringtone-test" type="button">试听</button>
-                <button id="ringtone-stop" type="button" disabled>停止</button>
-                <button id="ringtone-default" type="button">默认</button>
-              </span>
-            </div>
-          </div>
-        </section>
-
-        <section class="settings-module" aria-labelledby="system-settings-heading">
-          <header class="settings-module-header">
-            <h2 id="system-settings-heading">启动设置</h2>
-          </header>
-          <label class="switch-row autostart-row">
-            <input id="autostart-toggle" type="checkbox" />
-            <span>开机自启动</span>
-          </label>
-          <p id="autostart-status" class="settings-hint">正在读取自启动状态…</p>
-        </section>
-
         <section class="settings-module" aria-labelledby="about-settings-heading">
           <header class="settings-module-header">
             <h2 id="about-settings-heading">关于</h2>

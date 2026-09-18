@@ -1,5 +1,11 @@
-const latestReleaseApiUrl = 'https://api.github.com/repos/Dai2010/elegant-clock/releases/latest';
-const releasesPageUrl = 'https://github.com/Dai2010/elegant-clock/releases/latest';
+const defaultUpdateConfig = {
+  repository: 'Dai2010/elegant-clock',
+  assetPattern: process.platform === 'win32' ? /-Windows-x64\.exe$/i : null
+};
+
+function releasesPageUrl(config = defaultUpdateConfig) {
+  return `https://github.com/${config.repository}/releases/latest`;
+}
 const proxyBaseUrl = 'https://ghfast.top/';
 const maxReleaseNotesLength = 30000;
 const maxUpdateAssetSize = 1024 * 1024 * 1024;
@@ -102,10 +108,10 @@ function formatVersion(value) {
   return String(value || '').trim().replace(/^[vV]/, '');
 }
 
-function normalizeReleaseUrl(value) {
+function normalizeReleaseUrl(value, config = defaultUpdateConfig) {
   try {
     const url = new URL(String(value));
-    const expectedPrefix = '/Dai2010/elegant-clock/releases/';
+    const expectedPrefix = `/${config.repository}/releases/`;
 
     if (
       url.protocol === 'https:'
@@ -118,13 +124,13 @@ function normalizeReleaseUrl(value) {
       return url.toString();
     }
   } catch {
-    return releasesPageUrl;
+    return releasesPageUrl(config);
   }
 
-  return releasesPageUrl;
+  return releasesPageUrl(config);
 }
 
-function normalizeAsset(asset) {
+function normalizeAsset(asset, config = defaultUpdateConfig) {
   const name = String(asset?.name || '');
   const digest = String(asset?.digest || '').toLowerCase();
   const size = Number(asset?.size);
@@ -132,7 +138,7 @@ function normalizeAsset(asset) {
 
   try {
     const url = new URL(String(asset?.browser_download_url || ''));
-    const expectedPrefix = '/Dai2010/elegant-clock/releases/download/';
+    const expectedPrefix = `/${config.repository}/releases/download/`;
 
     if (
       url.protocol !== 'https:'
@@ -175,12 +181,16 @@ function pathBasename(value) {
   return value.split(/[\\/]/).at(-1);
 }
 
-function selectUpdateAsset(assets, platform, architecture, linuxDistributionIds = []) {
+function selectUpdateAsset(assets, platform, architecture, linuxDistributionIds = [], config = defaultUpdateConfig) {
   if (!Array.isArray(assets) || architecture !== 'x64') {
     return null;
   }
 
-  let assetPattern;
+  let assetPattern = config.assetPattern;
+
+  if (assetPattern) {
+    return normalizeAsset(assets.find((asset) => assetPattern.test(String(asset?.name || ''))), config);
+  }
 
   if (platform === 'win32') {
     assetPattern = /-Windows-x64\.exe$/i;
@@ -226,7 +236,7 @@ function selectUpdateAsset(assets, platform, architecture, linuxDistributionIds 
     return null;
   }
 
-  return normalizeAsset(assets.find((asset) => assetPattern.test(String(asset?.name || ''))));
+  return normalizeAsset(assets.find((asset) => assetPattern.test(String(asset?.name || ''))), config);
 }
 
 function truncateText(value, maxLength) {
@@ -243,7 +253,7 @@ function normalizePublishedAt(value) {
   return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : '';
 }
 
-function createUpdateInfo(release, currentVersion, platform, architecture, linuxDistributionIds = []) {
+function createUpdateInfo(release, currentVersion, platform, architecture, linuxDistributionIds = [], config = defaultUpdateConfig) {
   if (
     !release
     || release.draft
@@ -263,12 +273,13 @@ function createUpdateInfo(release, currentVersion, platform, architecture, linux
     releaseName,
     releaseNotes,
     publishedAt: normalizePublishedAt(release.published_at),
-    releaseUrl: normalizeReleaseUrl(release.html_url),
-    asset: selectUpdateAsset(release.assets, platform, architecture, linuxDistributionIds)
+    releaseUrl: normalizeReleaseUrl(release.html_url, config),
+    asset: selectUpdateAsset(release.assets, platform, architecture, linuxDistributionIds, config)
   };
 }
 
-async function fetchLatestRelease(fetchImplementation, signal) {
+async function fetchLatestRelease(fetchImplementation, signal, config = defaultUpdateConfig) {
+  const latestReleaseApiUrl = `https://api.github.com/repos/${config.repository}/releases/latest`;
   const response = await fetchImplementation(latestReleaseApiUrl, {
     method: 'GET',
     headers: {
@@ -286,13 +297,13 @@ async function fetchLatestRelease(fetchImplementation, signal) {
   return response.json();
 }
 
-function getDirectDownloadUrl(downloadUrl) {
+function getDirectDownloadUrl(downloadUrl, config = defaultUpdateConfig) {
   const trustedUrl = normalizeAsset({
     name: 'update.exe',
     browser_download_url: downloadUrl,
     size: 1,
     digest: `sha256:${'0'.repeat(64)}`
-  })?.downloadUrl;
+  }, config)?.downloadUrl;
 
   if (!trustedUrl) {
     throw new Error('Invalid GitHub release asset URL');
@@ -301,8 +312,8 @@ function getDirectDownloadUrl(downloadUrl) {
   return trustedUrl;
 }
 
-function getProxyDownloadUrl(downloadUrl) {
-  return `${proxyBaseUrl}${getDirectDownloadUrl(downloadUrl)}`;
+function getProxyDownloadUrl(downloadUrl, config = defaultUpdateConfig) {
+  return `${proxyBaseUrl}${getDirectDownloadUrl(downloadUrl, config)}`;
 }
 
 module.exports = {
