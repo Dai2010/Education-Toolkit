@@ -440,7 +440,49 @@ async function onAssignmentSubmit(event) {
 }
 
 async function onNameSubmit(event) { event.preventDefault(); const form = new FormData(event.target); const name = String(form.get('name') || '').trim(); if (!name) return; state.names.push({ name, group: String(form.get('group') || '').trim() }); state.nameLists[0].names = state.names; await save(); event.target.reset(); showToast('名单已添加'); }
-async function importNames() { try { const data = await api.importJson(); if (!data) return; const names = Array.isArray(data) ? data : data.names; if (!Array.isArray(names)) throw new Error('名单 JSON 应为数组或包含 names 数组'); state.names = names.map((item) => typeof item === 'string' ? { name: item, group: '' } : { name: item.name, group: item.group || '' }).filter((item) => item.name); state.nameLists[0].names = state.names; await save(); showToast(`已导入 ${state.names.length} 人`); } catch (error) { showToast(`导入失败：${error.message}`); } }
+async function importNames() { 
+  try { 
+    const data = await api.importJson(); 
+    if (!data) return; 
+    
+    let names;
+    
+    // 兼容多种格式
+    if (Array.isArray(data)) {
+      // 直接数组格式：[{name, group}] 或 ["name"]
+      names = data;
+    } else if (data.names && Array.isArray(data.names)) {
+      // {names: [...]} 格式
+      names = data.names;
+    } else if (data.students && Array.isArray(data.students)) {
+      // 旧版 rollcall 格式：{students: [...]}
+      names = data.students;
+    } else {
+      throw new Error('名单 JSON 应为数组或包含 names/students 数组');
+    }
+    
+    if (!Array.isArray(names)) {
+      throw new Error('名单数据格式错误');
+    }
+    
+    // 标准化名单格式
+    state.names = names.map((item) => {
+      if (typeof item === 'string') {
+        return { name: item, group: '' };
+      }
+      // 兼容 rollcall 的 student 字段
+      const name = item.name || item.student || '';
+      const group = item.group || item.班级 || '';
+      return { name: String(name).trim(), group: String(group).trim() };
+    }).filter((item) => item.name);
+    
+    state.nameLists[0].names = state.names; 
+    await save(); 
+    showToast(`已导入 ${state.names.length} 人`); 
+  } catch (error) { 
+    showToast(`导入失败：${error.message}`); 
+  } 
+}
 async function onScheduleSubmit(event) {
   event.preventDefault();
   const form = new FormData(event.target);

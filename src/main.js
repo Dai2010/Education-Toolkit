@@ -5,6 +5,21 @@ const elegantClock = require('./modules/elegant-clock/src/main.js');
 const scheduleTools = require('./schedule.js');
 const autostart = require('./autostart.js')(app);
 
+// 单实例锁
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // 当运行第二个实例时，聚焦到已存在的窗口
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 const defaultState = {
   settings: {
     themeColor: '#8888CC',
