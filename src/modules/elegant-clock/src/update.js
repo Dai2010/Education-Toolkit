@@ -37,7 +37,10 @@ function renderUpdateInfo(info) {
   elements.releaseName.textContent = info.releaseName;
   elements.currentVersion.textContent = `v${info.currentVersion}`;
   elements.latestVersion.textContent = `v${info.latestVersion}`;
-  elements.releaseNotes.textContent = info.releaseNotes;
+  const notes = String(info.releaseNotes || '').replace(/^(#{1,6})(?=[^#\s])/gm, '$1 ');
+  elements.releaseNotes.innerHTML = DOMPurify.sanitize(marked.parse(notes, { gfm: true }), {
+    USE_PROFILES: { html: true }, FORBID_TAGS: ['img', 'style', 'input', 'form'], FORBID_ATTR: ['style', 'id', 'name']
+  });
   document.title = `Education Toolkit v${info.latestVersion} 可用`;
 
   const publishedAt = formatPublishedAt(info.publishedAt);
@@ -116,6 +119,12 @@ function closeWindow() {
 }
 
 async function init() {
+  elements.releaseNotes.addEventListener('click', event => {
+    const link = event.target.closest('a');
+    if (!link) return;
+    event.preventDefault();
+    if (/^https?:\/\//i.test(link.getAttribute('href') || '')) shell?.openExternal?.(link.href);
+  });
   shell?.onUpdateProgress?.(showProgress);
 
   try {

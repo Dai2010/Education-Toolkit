@@ -12,8 +12,8 @@
     "test:ui": "electron test/electron-smoke.cjs"
   },
   "devDependencies": {
-    "electron": "^33.3.1",
-    "electron-builder": "^24.13.3"
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3"
   },
   "build": {
     "appId": "io.github.dai2010.educationtoolkit",
@@ -58,5 +58,9 @@
         ]
       }
     ]
+  },
+  "dependencies": {
+    "dompurify": "^3.4.15",
+    "marked": "^15.0.12"
   }
 }

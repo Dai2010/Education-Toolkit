@@ -30,6 +30,19 @@ app.whenReady().then(async () => {
     const clock = await until(() => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().endsWith('/elegant-clock/src/index.html')));
     await until(() => main.webContents.executeJavaScript("Boolean(document.querySelector('.clock-board'))"));
     await until(() => clock.webContents.executeJavaScript("typeof ToolkitSchedule === 'object' && Boolean(document.querySelector('#next-class').textContent)"));
+    const toolsFrame = await until(() => main.webContents.mainFrame.frames.find(frame => frame.url.includes('tools.html?embedded=1')));
+    await until(() => toolsFrame.executeJavaScript('Boolean(currentState)'));
+    const windowsBefore = BrowserWindow.getAllWindows().length;
+    await toolsFrame.executeJavaScript("document.querySelector('[data-tool=countdown]').click(); document.querySelector('#minutes-input').value = '2'; document.querySelector('#countdown-start').click()");
+    await until(() => toolsFrame.executeJavaScript('currentState.countdown.running'));
+    await main.webContents.executeJavaScript("navigate('random'); navigate('clock'); render()");
+    assert.equal(await toolsFrame.executeJavaScript('currentState.countdown.running && activeTool === "countdown"'), true);
+    assert.equal(BrowserWindow.getAllWindows().length, windowsBefore, 'Tools run inside the main clock page');
+    await toolsFrame.executeJavaScript('shell.countdownReset()');
+    for (const tool of ['pomodoro', 'stopwatch', 'reminders']) {
+      await toolsFrame.executeJavaScript(`document.querySelector('#tool-back').click(); document.querySelector('[data-tool=${tool}]').click()`);
+      assert.equal(await toolsFrame.executeJavaScript(`!document.querySelector('[data-tool-view=${tool}]').hidden`), true);
+    }
     if (process.env.TOOLKIT_TEST_NAMES_FILE) {
       const imported = JSON.parse(fs.readFileSync(process.env.TOOLKIT_TEST_NAMES_FILE, 'utf8'));
       const people = imported.lists?.[0]?.people || imported.names || imported.students || imported;

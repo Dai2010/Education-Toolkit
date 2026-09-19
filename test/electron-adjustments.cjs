@@ -104,12 +104,14 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
   await run(`api.saveState(${JSON.stringify(snapshot)})`);
 
   ipcMain.removeHandler('app:get-update-info');
-  ipcMain.handle('app:get-update-info', () => ({ releaseName: 'Education Toolkit test', currentVersion: '1.0.6', latestVersion: '1.0.7', releaseNotes: '测试更新说明', releaseUrl: 'https://github.com/Dai2010/Education-Toolkit/releases', asset: null }));
+  ipcMain.handle('app:get-update-info', () => ({ releaseName: 'Education Toolkit test', currentVersion: '1.0.6', latestVersion: '1.0.7', releaseNotes: '##新增功能\n\n- **加粗**\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n[链接](https://github.com)\n\n<img src=x onerror="window.injected=true"><script>window.injected=true</script>', releaseUrl: 'https://github.com/Dai2010/Education-Toolkit/releases', asset: null }));
   const update = new BrowserWindow({ show: false, webPreferences: { preload: path.join(__dirname, '../src/modules/elegant-clock/src/preload.js'), contextIsolation: true, nodeIntegration: false } });
   await update.loadFile(path.join(__dirname, '../src/modules/elegant-clock/src/update.html'));
   await until(() => update.webContents.executeJavaScript("document.title === 'Education Toolkit v1.0.7 可用'"));
   assert.equal(await update.webContents.executeJavaScript("document.querySelector('.eyebrow').textContent"), 'Education Toolkit 更新');
   assert.equal(await update.webContents.executeJavaScript("document.body.textContent.includes('桌面时钟更新')"), false);
+  assert.equal(await update.webContents.executeJavaScript("Boolean(document.querySelector('#release-notes h2') && document.querySelector('#release-notes strong') && document.querySelector('#release-notes table'))"), true);
+  assert.equal(await update.webContents.executeJavaScript("!window.injected && !document.querySelector('#release-notes script, #release-notes img')"), true);
   update.destroy();
   console.log('Date adjustments verified: real forms, cross-week swap, move, holiday, custom day, undo, linked reminders, persistence, clock synchronization and update branding.');
 };

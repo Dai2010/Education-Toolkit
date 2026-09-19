@@ -1,4 +1,6 @@
-const shell = window.elegantClock;
+const embedded = new URLSearchParams(location.search).has('embedded');
+const shell = embedded ? window.parent.clockTools : window.elegantClock;
+if (embedded) document.body.classList.add('embedded-tools');
 
 const elements = {
   toolBack: document.querySelector('#tool-back'),
@@ -111,6 +113,7 @@ function hexToRgbParts(hex) {
 }
 
 function applyWindowTheme(settings = {}) {
+  if (embedded) return;
   const rootStyle = document.documentElement.style;
   const backgroundColor = normalizeColor(settings.backgroundColor, '#101623');
   rootStyle.setProperty('--clock-font-family', settings.fontFamily || 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif');

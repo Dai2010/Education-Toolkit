@@ -36,6 +36,7 @@ function render() {
   title.textContent = viewTitles[currentView];
   backButton.style.visibility = currentView === 'home' ? 'hidden' : 'visible';
   app.innerHTML = views[currentView]();
+  document.querySelector('#embedded-clock-tools').hidden = currentView !== 'clock';
   bindView();
 }
 
@@ -201,7 +202,7 @@ function clockSummaryMarkup() {
 
 function clockView() {
   return `<section class="view-heading"><div><div class="eyebrow">DESKTOP CLOCK</div><h1>桌面时钟</h1><p>显示时间和当前课程状态；完整课表请进入“课表”区域查看。</p></div></section>
-    <div class="panel clock-controls"><div class="panel-title"><div><h2>时钟控制</h2><p>时钟外观、倒计时、提醒和更新使用 Elegant Clock 的功能。</p></div><div class="inline-actions"><button class="btn btn-secondary" data-clock-tools>倒计时与提醒</button><button class="btn btn-secondary" data-clock-update>检查更新</button><button class="btn btn-primary" data-clock-settings>时钟设置</button></div></div></div>
+    <div class="panel clock-controls"><div class="panel-title"><div><h2>时钟控制</h2><p>倒计时、番茄钟、正计时和提醒可直接在本页下方使用。</p></div><div class="inline-actions"><button class="btn btn-secondary" data-clock-update>检查更新</button><button class="btn btn-primary" data-clock-settings>时钟设置</button></div></div></div>
     <div class="clock-board"><div class="clock-face"><div class="time" id="clock-time">--:--:--</div><div class="date" id="clock-date">${formatDate(new Date())}</div></div><div class="panel next-class" id="clock-summary">${clockSummaryMarkup()}</div></div>`;
 }
 

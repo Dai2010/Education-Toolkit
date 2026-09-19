@@ -845,3 +845,7 @@ body.compact-mode .countdown-summary {
     flex: 1;
   }
 }
+.embedded-tools { --text: #2b2b42; --muted: #66667b; --accent: #6868aa; --panel-rgb: 255,255,255; --border: #e8e7f0; background: #fff; }
+.embedded-tools .utility-shell { background: #fff; }
+.embedded-tools input, .embedded-tools select, .embedded-tools textarea { background: #f8f7fc; color: #2b2b42; }
+.embedded-tools button { color: #2b2b42; background: #efeffa; }

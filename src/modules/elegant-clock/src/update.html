@@ -35,7 +35,7 @@
           <h2 id="release-heading">更新信息</h2>
           <time id="published-at" hidden></time>
         </header>
-        <pre id="release-notes" class="release-notes">正在读取更新信息…</pre>
+        <div id="release-notes" class="release-notes">正在读取更新信息…</div>
       </section>
 
       <section id="download-status" class="download-status" aria-live="polite" hidden>
@@ -54,6 +54,8 @@
       </footer>
     </main>
 
+    <script src="../../../../node_modules/marked/lib/marked.umd.js"></script>
+    <script src="../../../../node_modules/dompurify/dist/purify.min.js"></script>
     <script src="update.js"></script>
   </body>
 </html>

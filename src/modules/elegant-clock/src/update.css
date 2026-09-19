@@ -272,3 +272,12 @@ progress {
     padding-left: 0.7rem;
   }
 }
+.release-notes { white-space: normal !important; overflow-wrap: anywhere; }
+.release-notes h1, .release-notes h2, .release-notes h3 { margin: 1em 0 .5em; line-height: 1.4; }
+.release-notes p, .release-notes ul, .release-notes ol { margin: .65em 0; }
+.release-notes pre { white-space: pre-wrap; background: rgba(127,127,127,.15); padding: 12px; border-radius: 8px; }
+.release-notes code { font-family: monospace; }
+.release-notes table { border-collapse: collapse; width: 100%; }
+.release-notes th, .release-notes td { border: 1px solid #777; padding: 6px; }
+.release-notes blockquote { border-left: 3px solid #8888cc; margin-left: 0; padding-left: 14px; }
+.release-notes a { color: #a5b4fc; }
