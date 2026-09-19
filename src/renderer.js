@@ -20,7 +20,7 @@ let lastDrawResult = null;
 let drawListKey = '';
 let drawPending = false;
 let scheduleDay = ToolkitSchedule.weekday(new Date());
-const todaySchedule = () => ToolkitSchedule.forDay(state.schedule, ToolkitSchedule.weekday(new Date()));
+const todaySchedule = () => ToolkitSchedule.forDate(state, ToolkitSchedule.dateKey(new Date()));
 
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const uid = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -186,16 +186,17 @@ function drawResultMarkup() {
 
 
 function scheduleSummary() {
-  const result = ToolkitSchedule.summary(state.schedule);
+  const result = ToolkitSchedule.summary(state);
   return { label: result.label === '未上课' ? '下一节课' : result.label, item: result.item };
 }
 
 function clockSummaryMarkup() {
-  const result = ToolkitSchedule.summary(state.schedule);
+  const result = ToolkitSchedule.summary(state);
   const current = result.label === '上课中' ? result.item : null;
   const next = result.label === '课间' ? result.next : null;
-  const teacher = current ? (state.settings.subjectTeachers?.[current.subject] || '') : '';
-  return `<span class="state-label">${esc(result.label)}</span>${current ? `<h2>${esc(current.course)}</h2>${teacher ? `<p>${esc(teacher)}</p>` : ''}` : ''}${next ? `<p>下一节：${esc(next.course)}<br><small>${esc(state.settings.subjectTeachers?.[next.subject] || '')} · ${esc(next.start)}</small></p>` : (!current && result.label !== '课间' ? '<p>下一节课程将在课间显示。</p>' : '')}`;
+  const teacher = current?.teacher ?? '';
+  const label = ToolkitSchedule.dateLabel(state, ToolkitSchedule.dateKey(new Date()));
+  return `<span class="state-label">${esc(result.label)}</span>${label !== '正常安排' ? `<p>${esc(label)}</p>` : ''}${current ? `<h2>${esc(current.course)}</h2>${teacher ? `<p>${esc(teacher)}</p>` : ''}` : ''}${next ? `<p>下一节：${esc(next.course)}<br><small>${esc(next.teacher || '')} · ${esc(next.start)}</small></p>` : (!current && result.label !== '课间' ? '<p>下一节课程将在课间显示。</p>' : '')}`;
 }
 
 function clockView() {
@@ -208,7 +209,8 @@ function scheduleView() {
   settingsTab = 'schedule';
   const weekSchedule = buildWeekSchedule();
   return `<section class="view-heading"><div><div class="eyebrow">CLASS SCHEDULE</div><h1>课表</h1><p>完整查看、编辑和导入课表。课表状态会同步到桌面时钟。</p></div><button class="help-link" data-help="schedule">课表帮助 →</button></section>
-    <div class="panel"><div class="panel-title"><div><h2>完整周课表</h2><p>当前课程会随系统时间自动高亮。</p></div></div>${weekSchedule.periods.length ? renderWeekSchedule(weekSchedule) : '<div class="empty">还没有课表，请在下方添加或导入。</div>'}</div>
+    ${actualSchedulePanel()}
+    <details class="panel"><summary>基础周课表</summary><p>下面编辑每周重复的安排，临时调课请使用上方实际安排。</p>${weekSchedule.periods.length ? renderWeekSchedule(weekSchedule) : '<div class="empty">还没有课表，请在下方添加或导入。</div>'}</details>
     ${scheduleSection(true)}`;
 }
 
@@ -243,11 +245,12 @@ function renderWeekSchedule(weekSchedule) {
   const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
   const now = new Date();
   const today = ToolkitSchedule.weekday(now);
-  const currentStatus = ToolkitSchedule.summary(state.schedule, now);
+  const currentStatus = ToolkitSchedule.summary(state, now);
   
   // 判断当前正在上的课或课间相邻的课
   const isCurrentLesson = (lesson) => {
     if (!lesson) return false;
+    if (state.scheduleOverrides?.[ToolkitSchedule.dateKey(now)]) return false;
     
     // 检查是否是今天的课（没有weekday表示每天重复，或weekday匹配今天）
     const isToday = !lesson.weekday || lesson.weekday === today;
@@ -334,7 +337,7 @@ function helpView() {
   const topics = {
     overview: ['先看这里', '<h3>日常使用顺序</h3><ol><li>在“设置与关于 → 课表”录入或导入课表。</li><li>在“设置与关于 → 名单管理”添加或导入学生名单。</li><li>需要时在“作业布置”记录作业和提醒时间。</li><li>上课时点击左侧对应区块，工具会保留当前页面。</li></ol><h3>启动后看不到主界面</h3><p>这是正常行为：应用启动后只显示桌面时钟。点击桌面时钟会打开主界面的“桌面时钟”区块；也可以从托盘菜单打开。</p>'],
     clock: ['桌面时钟', '<h3>这里显示什么</h3><p>这里显示当前时间、日期和当前课程状态。课表内容不放在时钟区，完整课表请点击左侧“课表”。</p><h3>时钟控制</h3><ul><li>“时钟设置”：调整字体、字号、透明度、置顶等时钟专属选项。</li><li>“倒计时与提醒”：使用 Elegant Clock 的倒计时、番茄钟、秒表和提醒。</li><li>“检查更新”：检查 Education Toolkit 的新版本，并使用直连或代理下载。</li></ul><p>主题颜色、铃声和开机自启动属于工具包全局设置，请到“设置与关于 → 常规设置”修改。</p>'],
-    schedule: ['课表', '<h3>录入课程</h3><p>点击“添加课程”，填写科目、课程名、开始时间、课程时长和课间时长。选择具体星期表示只在该天使用；选择“每天”表示每天重复。</p><h3>任课老师</h3><p>老师按科目统一保存。同一科目的课程会使用同一个老师名称，修改某一节课时也会更新该科目的老师。</p><h3>查看和同步</h3><p>上方周课表按星期显示全部课程，当前课程会自动高亮。课表状态会同步到桌面时钟，但编辑课表必须在“课表”区域完成。</p><h3>导入格式</h3><p>导入 JSON 时使用 <code>schedule</code> 数组，每项至少包含 <code>subject</code>、<code>course</code>、<code>start</code>；可选字段为 <code>weekday</code>、<code>duration</code>、<code>breakDuration</code>。</p>'],
+    schedule: ['课表', '<h3>基础周课表</h3><p>下方课表管理用于录入每周重复的课程和任课老师，支持导入包含 schedule 数组的 JSON。</p><h3>周内与跨周调课</h3><p>在“本周实际安排”点击课程，选择交换或移动，再选择目标日期和课程。交换只更换课程及老师，保留两端上课时间、时长和课间；移动到已有课程的时间段会被阻止。也可交换两天的完整课表。</p><h3>调休与临时安排</h3><p>点击“调整当天”可按其他星期上课、放假、恢复基础安排，支持日期范围。单日自定义可添加、修改、删除课程和临时代课老师。“按其他星期”会跟随基础课表修改，自定义和交换后的安排保存独立副本。</p><h3>确认与撤销</h3><p>先预览两个日期的调整前后结果，再确认生效。调课记录支持整次撤销；同一日期还有后续调整时，先撤销后续记录。</p><h3>时钟与提醒</h3><p>桌面时钟、高亮和新建课表提醒均使用实际安排。已有课表提醒若受影响，会在预览中列出，默认同步；取消同步会保持原时间并改为固定提醒。课程取消时同步的提醒暂停，撤销可恢复。手动指定日期的提醒不变。这里只检查本班时段，不包含老师跨班冲突检查。</p>'],
     random: ['随机抽人', '<h3>单人模式</h3><p>每次随机抽取一名学生。</p><h3>多人模式</h3><p>设置每组人数和组数，系统会在本次抽取中避免重复分组。姓名使用统一字号，按组排列，结果过多时可以上下滚动。</p><h3>连续不重复</h3><p>打开后，已经抽过的学生会被记录，底部显示已抽和未抽人数。剩余人数不足时保留上一轮结果；点击“重置连续状态”后重新开始。</p><p>顶部可以切换抽取名单，切换后清空结果和连续记录；名单由“设置与关于 → 名单管理”维护。</p>'],
     names: ['名单管理', '<h3>手动添加</h3><p>输入姓名，可选填写分组，然后点击“添加名单”。</p><h3>批量导入</h3><p>支持字符串数组或对象数组。例如：<code>[{"name":"张三","group":"一组"}]</code>。也兼容包含 <code>names</code>、<code>students</code> 或 FileGator <code>lists</code> 数据的文件。</p><h3>注意</h3><p>随机抽人使用当前名单。导入名单会替换当前名单，不会追加到旧名单。</p>'],
     assignments: ['作业布置', '<h3>添加作业</h3><p>名称必填，科目和上交时间可选。可以直接填写上交时间，也可以选择课表课程并设置在课前或课后提醒。</p><h3>完成和删除</h3><p>勾选右侧开关表示已完成；编辑会保留完成状态，删除会立即移除记录。</p><h3>桌面作业状态</h3><p>打开页面右上角的桌面作业状态后，会显示桌面小组件。它不会始终置顶，切换到其他程序后可以被覆盖；作业更新不会把它带到前台。小组件可以拖动，位置会自动保存。</p>'],
@@ -351,6 +354,7 @@ function settingsView() {
 const views = { home: homeView, random: randomView, clock: clockView, schedule: scheduleView, assignments: assignmentsView, settings: settingsView };
 
 function bindView() {
+  bindAdjustments();
   document.querySelectorAll('[data-go]').forEach((element) => element.addEventListener('click', () => navigate(element.dataset.go)));
   document.querySelectorAll('[data-settings-tab]').forEach((element) => element.addEventListener('click', () => { settingsTab = element.dataset.settingsTab; render(); if (settingsTab === 'general') api.getAutostartStatus().then((status) => { const copy = document.querySelector('#autostart-copy'); if (copy) copy.textContent = status ? '系统当前已开启' : '系统当前未开启'; }); }));
   document.querySelector('[data-settings-tab="schedule"]')?.addEventListener('click', () => navigate('schedule'));
@@ -359,6 +363,12 @@ function bindView() {
   document.querySelector('[data-action="new-assignment"]')?.addEventListener('click', () => { editingAssignmentId = 'new'; render(); });
   document.querySelector('[data-action="cancel-assignment"]')?.addEventListener('click', () => { editingAssignmentId = null; render(); });
   document.querySelector('#assignment-form')?.addEventListener('submit', onAssignmentSubmit);
+  const assignmentDueInput = document.querySelector('#assignment-due');
+  const editedAssignment = state.assignments.find(item => item.id === editingAssignmentId);
+  if (assignmentDueInput && editedAssignment?.dueAt) {
+    const local = new Date(editedAssignment.dueAt);
+    assignmentDueInput.value = `${ToolkitSchedule.dateKey(local)}T${String(local.getHours()).padStart(2, '0')}:${String(local.getMinutes()).padStart(2, '0')}`;
+  }
   document.querySelectorAll('[data-delete-assignment]').forEach((element) => element.addEventListener('click', async () => { state.assignments = state.assignments.filter((item) => item.id !== element.dataset.deleteAssignment); await save(); showToast('作业已删除'); }));
   document.querySelectorAll('[data-edit-assignment]').forEach((element) => element.addEventListener('click', () => { editingAssignmentId = element.dataset.editAssignment; render(); }));
   document.querySelectorAll('[data-complete]').forEach((element) => element.addEventListener('change', async () => { const item = state.assignments.find((assignment) => assignment.id === element.dataset.complete); if (item) item.completed = element.checked; await save(); }));
@@ -488,8 +498,18 @@ function bindView() {
 async function onAssignmentSubmit(event) {
   event.preventDefault(); const form = new FormData(event.target); const name = String(form.get('name') || '').trim(); if (!name) return;
   const lesson = state.schedule.find((item) => item.id === form.get('lessonId')); let dueAt = form.get('dueAt') ? new Date(form.get('dueAt')).toISOString() : '';
-  if (!dueAt && lesson) dueAt = ToolkitSchedule.nextDue(lesson, form.get('relation'));
-  const payload = { id: editingAssignmentId === 'new' ? uid() : editingAssignmentId, name, subject: form.get('subject'), dueAt, relation: form.get('relation'), lessonId: form.get('lessonId'), lessonLabel: lesson ? `${lesson.start} ${lesson.course}` : '', completed: false, remindedAt: '' };
+  let occurrence = {};
+  let reminderMode = dueAt ? 'fixed' : 'schedule';
+  const original = state.assignments.find(item => item.id === editingAssignmentId);
+  const keepLink = original?.reminderMode === 'schedule' && original.lessonId === form.get('lessonId') && original.relation === form.get('relation') && (original.dueAt || '') === dueAt;
+  if (keepLink) {
+    occurrence = { lessonOccurrence: original.lessonOccurrence, lessonDate: original.lessonDate, schedulePaused: original.schedulePaused };
+    reminderMode = 'schedule';
+  } else if (!dueAt && lesson) {
+    try { occurrence = ToolkitSchedule.nextOccurrence(state, lesson.id, form.get('relation')); dueAt = occurrence.dueAt; }
+    catch (error) { showToast(error.message); return; }
+  }
+  const payload = { id: editingAssignmentId === 'new' ? uid() : editingAssignmentId, name, subject: form.get('subject'), dueAt, ...occurrence, reminderMode, relation: form.get('relation'), lessonId: form.get('lessonId'), lessonLabel: lesson ? `${lesson.start} ${lesson.course}` : '', completed: false, remindedAt: '' };
   const index = state.assignments.findIndex((item) => item.id === editingAssignmentId); if (index >= 0) payload.completed = state.assignments[index].completed; if (index >= 0) state.assignments[index] = payload; else state.assignments.push(payload); editingAssignmentId = null; await save(); showToast('作业已保存');
 }
 
@@ -666,7 +686,8 @@ function processInline(text) {
 }
 
 function refreshClockSchedule(now) {
-  const status = ToolkitSchedule.summary(state.schedule, now);
+  refreshActualSchedule(now);
+  const status = ToolkitSchedule.summary(state, now);
   const currentIds = new Set();
   if (status.label === '上课中' && status.item) currentIds.add(status.item.id);
   if (status.label === '课间') {
@@ -676,7 +697,7 @@ function refreshClockSchedule(now) {
 
   const today = ToolkitSchedule.weekday(now);
   document.querySelectorAll('.lesson-cell[data-lesson-id]').forEach((cell) => {
-    cell.classList.toggle('current', cell.dataset.lessonDay === String(today) && currentIds.has(cell.dataset.lessonId));
+    cell.classList.toggle('current', !state.scheduleOverrides?.[ToolkitSchedule.dateKey(now)] && cell.dataset.lessonDay === String(today) && currentIds.has(cell.dataset.lessonId));
   });
   document.querySelectorAll('.day-header[data-day]').forEach((header) => {
     header.classList.toggle('today', header.dataset.day === String(today));

@@ -38,7 +38,7 @@ function renderUpdateInfo(info) {
   elements.currentVersion.textContent = `v${info.currentVersion}`;
   elements.latestVersion.textContent = `v${info.latestVersion}`;
   elements.releaseNotes.textContent = info.releaseNotes;
-  document.title = `桌面时钟 v${info.latestVersion} 可用`;
+  document.title = `Education Toolkit v${info.latestVersion} 可用`;
 
   const publishedAt = formatPublishedAt(info.publishedAt);
   elements.publishedAt.hidden = !publishedAt;

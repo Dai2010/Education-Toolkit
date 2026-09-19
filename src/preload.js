@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('educationToolkit', {
+  adjustSchedule: (request, expected) => ipcRenderer.invoke('adjust-schedule', request, expected),
   openClockSettings: () => ipcRenderer.invoke('toolkit:clock-settings'),
   openClockTools: () => ipcRenderer.invoke('toolkit:clock-tools'),
   onNavigate: (callback) => ipcRenderer.on('toolkit:navigate', (_event, view) => callback(view)),

@@ -125,18 +125,22 @@ function updateClock() {
 
 let toolkitLessons = [];
 let toolkitSubjectTeachers = {};
+let toolkitScheduleOverrides = {};
 function toolkitTeacher(subject) {
   return toolkitSubjectTeachers?.[subject] || '';
 }
 function renderNextClass(now = new Date()) {
-  const result = ToolkitSchedule.summary(toolkitLessons, now);
+  const model = { schedule: toolkitLessons, scheduleOverrides: toolkitScheduleOverrides, subjectTeachers: toolkitSubjectTeachers };
+  const result = ToolkitSchedule.summary(model, now);
   const parts = [result.label];
+  const label = ToolkitSchedule.dateLabel(model, ToolkitSchedule.dateKey(now));
+  if (label !== '正常安排') parts.push(label);
   if (result.label === '上课中' && result.item) {
-    const teacher = toolkitTeacher(result.item.subject);
+    const teacher = result.item.teacher ?? toolkitTeacher(result.item.subject);
     parts.push(teacher ? `${result.item.course}\n${teacher}` : result.item.course);
   }
   if (result.label === '课间' && result.next) {
-    const teacher = toolkitTeacher(result.next.subject);
+    const teacher = result.next.teacher ?? toolkitTeacher(result.next.subject);
     parts.push(teacher ? `下一节 ${result.next.course}\n${teacher} · ${result.next.start}` : `下一节 ${result.next.course} · ${result.next.start}`);
   }
   elements.nextClass.hidden = false;
@@ -144,7 +148,10 @@ function renderNextClass(now = new Date()) {
 }
 async function updateNextClass() {
   try {
-    toolkitLessons = await shell?.getScheduleState?.() || [];
+    const payload = await shell?.getScheduleState?.() || {};
+    toolkitLessons = payload.schedule || (Array.isArray(payload) ? payload : []);
+    toolkitScheduleOverrides = payload.scheduleOverrides || {};
+    toolkitSubjectTeachers = payload.subjectTeachers || {};
     renderNextClass();
     shell?.fitCompactWindow?.();
   } catch { elements.nextClass.textContent = '课表暂不可用'; }
@@ -343,7 +350,7 @@ function bindEvents() {
     exitCompactMode();
   });
   shell?.onCompactState?.(applyCompactUiState);
-  shell?.onScheduleChanged?.((payload) => { toolkitLessons = payload?.schedule || payload || []; toolkitSubjectTeachers = payload?.subjectTeachers || {}; renderNextClass(); shell?.fitCompactWindow?.(); });
+  shell?.onScheduleChanged?.((payload) => { toolkitLessons = payload?.schedule || payload || []; toolkitScheduleOverrides = payload?.scheduleOverrides || {}; toolkitSubjectTeachers = payload?.subjectTeachers || {}; renderNextClass(); shell?.fitCompactWindow?.(); });
   shell?.onThemeChanged?.((color) => { if (/^#[0-9a-f]{6}$/i.test(color || '')) document.documentElement.style.setProperty('--accent', color); });
   shell?.onStateChanged?.(renderState);
   shell?.onPlayAlert?.(playAlertTone);

@@ -1817,7 +1817,7 @@ function createWindow() {
   });
   mainWindow.webContents.once('did-finish-load', () => {
     mainWindow?.webContents.send('state:changed', getStateSnapshot());
-    mainWindow?.webContents.send('toolkit:schedule', { schedule: host?.getScheduleState?.() || [], subjectTeachers: host?.getSubjectTeachers?.() || {} });
+    mainWindow?.webContents.send('toolkit:schedule', { schedule: host?.getScheduleState?.() || [], scheduleOverrides: host?.getScheduleOverrides?.() || {}, subjectTeachers: host?.getSubjectTeachers?.() || {} });
     mainWindow?.webContents.send('toolkit:theme', host?.getThemeColor?.());
   });
 
@@ -1990,7 +1990,7 @@ function createUpdateWindow() {
     height: 680,
     minWidth: 460,
     minHeight: 520,
-    title: '桌面时钟更新',
+    title: 'Education Toolkit 更新',
     frame: true,
     backgroundColor: '#17191c',
     icon: getIconPath(),
@@ -2046,7 +2046,7 @@ module.exports = {
   tools: createToolsWindow,
   checkForUpdates,
   sync() {
-    mainWindow?.webContents.send('toolkit:schedule', { schedule: host.getScheduleState(), subjectTeachers: host.getSubjectTeachers?.() || {} });
+    mainWindow?.webContents.send('toolkit:schedule', { schedule: host.getScheduleState(), scheduleOverrides: host.getScheduleOverrides?.() || {}, subjectTeachers: host.getSubjectTeachers?.() || {} });
     mainWindow?.webContents.send('toolkit:theme', host.getThemeColor?.());
     settingsWindow?.webContents.send('toolkit:theme', host.getThemeColor?.());
     updateSettings({ ringtone: createRingtonePayload(host.ringtonePath()) });

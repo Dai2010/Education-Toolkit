@@ -73,6 +73,8 @@ function normalizeState(value) {
   next.assignments = Array.isArray(next.assignments) ? next.assignments : [];
   next.schedule = Array.isArray(next.schedule) ? next.schedule : [];
   next.drawnIds = Array.isArray(next.drawnIds) ? next.drawnIds : [];
+  next.scheduleOverrides = scheduleTools.normalizeOverrides(next.scheduleOverrides);
+  next.scheduleHistory = Array.isArray(next.scheduleHistory) ? next.scheduleHistory : [];
   {
     const normalizedSchedule = scheduleTools.normalize({ schedule: next.schedule, subjectTeachers: next.settings.subjectTeachers });
     next.schedule = normalizedSchedule.schedule;
@@ -273,6 +275,16 @@ function drawGroups(list, groupSize, groupCount, continuous) {
 
 function registerIpc() {
   ipcMain.handle('get-state', () => state);
+  ipcMain.handle('adjust-schedule', async (_event, request, expected) => {
+    if (JSON.stringify(state) !== expected) throw new Error('数据已发生变化，请重新预览后确认');
+    const result = scheduleTools.applyAdjustment(state, request);
+    const previous = state;
+    state = normalizeState(result.state);
+    try { await saveState(); } catch (error) { state = previous; throw error; }
+    sendState();
+    elegantClock.sync?.();
+    return state;
+  });
   ipcMain.handle('save-state', async (_event, next) => {
     state = normalizeState(next);
     await saveState();
@@ -298,7 +310,7 @@ function registerIpc() {
   ipcMain.handle('toolkit:open', () => showToolkit('clock'));
   ipcMain.handle('toolkit:clock-settings', () => { elegantClock.settings(); return true; });
   ipcMain.handle('toolkit:clock-tools', () => { elegantClock.tools(); return true; });
-  ipcMain.handle('toolkit:get-schedule-state', () => state.schedule);
+  ipcMain.handle('toolkit:get-schedule-state', () => ({ schedule: state.schedule, scheduleOverrides: state.scheduleOverrides, subjectTeachers: state.settings.subjectTeachers }));
   ipcMain.handle('random-draw', async (_event, options = {}) => {
     const list = Array.isArray(state.names) ? state.names.filter((person) => person?.name) : [];
     if (!list.length) return { error: '名单为空，请先在设置中添加名单' };
@@ -367,6 +379,7 @@ app.whenReady().then(async () => {
     getAutostartInfo: () => ({ supported: true, enabled: autostart.get() }),
     setAutostart: (enabled) => { setAutostart(enabled); return { supported: true, enabled: autostart.get() }; },
     getScheduleState: () => state.schedule,
+    getScheduleOverrides: () => state.scheduleOverrides,
     getSubjectTeachers: () => state.settings.subjectTeachers,
     getThemeColor: () => state.settings.themeColor,
     startHidden: true

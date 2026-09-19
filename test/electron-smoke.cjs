@@ -193,6 +193,7 @@ app.whenReady().then(async () => {
       child.on('message', (message) => { if (message.type === 'watchdog-ready') child.postMessage({ type: 'shutdown' }); });
       child.on('exit', (code) => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error('Watchdog failed')); });
     });
+    await require('./electron-adjustments.cjs')(main, clock, until, profile);
     assert.deepEqual(errors, []);
     console.log(`Electron UI verified: ${checks} lesson starts, all weekday tables, embedded clock, tools, settings, drag and watchdog.`);
     app.quit();
