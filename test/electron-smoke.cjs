@@ -167,14 +167,14 @@ app.whenReady().then(async () => {
       const original = widget[method].bind(widget);
       widget[method] = (...args) => { widgetPromotions.push(method); return original(...args); };
     }
-    assert.deepEqual(widget.getSize(), [81, 81]);
+    assert.deepEqual(widget.getSize(), [108, 108]);
     await widget.webContents.executeJavaScript('educationToolkit.toggleHomeworkWidget(true)');
-    assert.deepEqual(widget.getSize(), [465, 285]);
+    assert.deepEqual(widget.getSize(), [620, 380]);
     await wait(100);
-    assert.deepEqual(widget.getSize(), [465, 285]);
+    assert.deepEqual(widget.getSize(), [620, 380]);
     await main.webContents.executeJavaScript("api.saveState({ ...state, assignments: Array.from({length: 8}, (_, i) => ({ id: String(i), name: 'Assignment ' + i, subject: 'Math' })) })");
     await until(() => widget.webContents.executeJavaScript("document.querySelectorAll('.assignment').length === 8"));
-    assert.deepEqual(await widget.webContents.executeJavaScript("['.header .title', '.assignment strong', '.assignment span'].map(selector => getComputedStyle(document.querySelector(selector)).fontSize)"), ['18px', '21px', '16.5px']);
+    assert.deepEqual(await widget.webContents.executeJavaScript("['.header .title', '.assignment strong', '.assignment span'].map(selector => getComputedStyle(document.querySelector(selector)).fontSize)"), ['24px', '28px', '22px']);
     assert.equal(await widget.webContents.executeJavaScript("document.querySelector('.content').scrollHeight > document.querySelector('.content').clientHeight"), true);
     if (process.env.TOOLKIT_TEST_SCREENSHOTS) {
       fs.writeFileSync(path.join(process.env.TOOLKIT_TEST_SCREENSHOTS, 'homework.png'), (await widget.webContents.capturePage()).toPNG());
@@ -182,7 +182,7 @@ app.whenReady().then(async () => {
     }
     await widget.webContents.executeJavaScript('educationToolkit.toggleHomeworkWidget(false)');
     await wait(200);
-    assert.deepEqual(widget.getSize(), [81, 81]);
+    assert.deepEqual(widget.getSize(), [108, 108]);
     const before = clock.getPosition();
     assert.deepEqual(widgetPromotions, [], 'Homework updates and resizing must not promote the widget');
     await clock.webContents.executeJavaScript('shell.moveWindowBy(10, 10)');

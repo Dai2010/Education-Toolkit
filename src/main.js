@@ -122,8 +122,8 @@ function sendState() {
 function createWidget() {
   if (widgetWindow && !widgetWindow.isDestroyed()) return;
   widgetWindow = new BrowserWindow({
-    width: state.settings.homeworkWidgetExpanded ? 465 : 81,
-    height: state.settings.homeworkWidgetExpanded ? 285 : 81,
+    width: state.settings.homeworkWidgetExpanded ? 620 : 108,
+    height: state.settings.homeworkWidgetExpanded ? 380 : 108,
     frame: false,
     resizable: false,
     alwaysOnTop: false,
@@ -136,8 +136,8 @@ function createWidget() {
   widgetWindow.once('ready-to-show', () => widgetWindow?.showInactive());
   widgetWindow.loadFile(path.join(__dirname, 'widget.html'));
   const display = screen.getPrimaryDisplay().workArea;
-  const width = state.settings.homeworkWidgetExpanded ? 465 : 81;
-  const height = state.settings.homeworkWidgetExpanded ? 285 : 81;
+  const width = state.settings.homeworkWidgetExpanded ? 620 : 108;
+  const height = state.settings.homeworkWidgetExpanded ? 380 : 108;
   const savedX = state.settings.homeworkWidgetX;
   const savedY = state.settings.homeworkWidgetY;
   
@@ -164,8 +164,8 @@ function resizeHomeworkWidget(expanded) {
   state.settings.homeworkWidgetExpanded = Boolean(expanded);
   if (!widgetWindow || widgetWindow.isDestroyed()) return;
   const bounds = widgetWindow.getBounds();
-  const width = expanded ? 465 : 81;
-  const height = expanded ? 285 : 81;
+  const width = expanded ? 620 : 108;
+  const height = expanded ? 380 : 108;
   const area = screen.getDisplayMatching(bounds).workArea;
   const x = Math.max(area.x, Math.min(bounds.x + bounds.width - width, area.x + area.width - width));
   const y = Math.max(area.y, Math.min(bounds.y, area.y + area.height - height));
