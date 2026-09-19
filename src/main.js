@@ -122,19 +122,22 @@ function sendState() {
 function createWidget() {
   if (widgetWindow && !widgetWindow.isDestroyed()) return;
   widgetWindow = new BrowserWindow({
-    width: state.settings.homeworkWidgetExpanded ? 400 : 54,
-    height: state.settings.homeworkWidgetExpanded ? 280 : 54,
+    width: state.settings.homeworkWidgetExpanded ? 465 : 81,
+    height: state.settings.homeworkWidgetExpanded ? 285 : 81,
     frame: false,
     resizable: false,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
+    focusable: process.platform === 'linux',
+    show: false,
     skipTaskbar: true,
     backgroundColor: '#252542',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
+  widgetWindow.once('ready-to-show', () => widgetWindow?.showInactive());
   widgetWindow.loadFile(path.join(__dirname, 'widget.html'));
   const display = screen.getPrimaryDisplay().workArea;
-  const width = state.settings.homeworkWidgetExpanded ? 400 : 54;
-  const height = state.settings.homeworkWidgetExpanded ? 280 : 54;
+  const width = state.settings.homeworkWidgetExpanded ? 465 : 81;
+  const height = state.settings.homeworkWidgetExpanded ? 285 : 81;
   const savedX = state.settings.homeworkWidgetX;
   const savedY = state.settings.homeworkWidgetY;
   
@@ -161,9 +164,12 @@ function resizeHomeworkWidget(expanded) {
   state.settings.homeworkWidgetExpanded = Boolean(expanded);
   if (!widgetWindow || widgetWindow.isDestroyed()) return;
   const bounds = widgetWindow.getBounds();
-  const width = expanded ? 310 : 54;
-  const height = expanded ? 190 : 54;
-  widgetWindow.setBounds({ x: Math.max(0, bounds.x + bounds.width - width), y: bounds.y, width, height }, false);
+  const width = expanded ? 465 : 81;
+  const height = expanded ? 285 : 81;
+  const area = screen.getDisplayMatching(bounds).workArea;
+  const x = Math.max(area.x, Math.min(bounds.x + bounds.width - width, area.x + area.width - width));
+  const y = Math.max(area.y, Math.min(bounds.y, area.y + area.height - height));
+  widgetWindow.setBounds({ x, y, width, height }, false);
 }
 
 function playReminder(assignment) {

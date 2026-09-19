@@ -16,6 +16,9 @@ let helpTopic = 'overview';
 let editingAssignmentId = null;
 let editingScheduleId = null;
 let clockTimer;
+let lastDrawResult = null;
+let drawListKey = '';
+let drawPending = false;
 let scheduleDay = ToolkitSchedule.weekday(new Date());
 const todaySchedule = () => ToolkitSchedule.forDay(state.schedule, ToolkitSchedule.weekday(new Date()));
 
@@ -150,14 +153,35 @@ function homeView() {
 }
 
 function randomView() {
+  const listKey = JSON.stringify([state.settings.selectedNameList, state.names]);
+  if (listKey !== drawListKey) lastDrawResult = null;
+  drawListKey = listKey;
   const mode = state.settings.drawMode || 'single';
   const continuous = state.settings.drawContinuous || false;
   const remaining = continuous ? state.names.length - (state.drawnIds?.length || 0) : state.names.length;
   const drawn = state.drawnIds?.length || 0;
   
-  return `<section class="view-heading"><div><div class="eyebrow">CLASSROOM TOOL</div><h1>随机抽人</h1><p>使用当前名单进行课堂抽取，支持单人和分组模式。</p></div><div class="inline-actions"><button class="help-link" data-help="random">抽取设置 →</button></div></section>
-    <div class="panel"><div class="panel-title"><div><h2>抽取控制</h2><p>当前名单：${esc(state.settings.selectedNameList)} · ${state.names.length} 人${continuous ? ` · 已抽 ${drawn} 人 · 剩余 ${remaining} 人` : ''}</p></div><div class="inline-actions">${continuous ? '<button class="btn btn-secondary" data-action="reset-drawn">重置记录</button>' : ''}<button class="btn btn-primary" data-action="draw">开始抽取</button></div></div><div class="draw-controls"><label class="setting-inline"><input type="radio" name="draw-mode" value="single" ${mode === 'single' ? 'checked' : ''} data-draw-mode /> 单人模式</label><label class="setting-inline"><input type="radio" name="draw-mode" value="group" ${mode === 'group' ? 'checked' : ''} data-draw-mode /> 分组模式</label>${mode === 'group' ? `<div class="draw-group-settings"><label>每组 <input type="number" min="1" max="${state.names.length}" value="${state.settings.drawGroupSize || 1}" data-group-size style="width:60px" /> 人</label><label>共 <input type="number" min="1" max="20" value="${state.settings.drawGroupCount || 1}" data-group-count style="width:60px" /> 组</label></div>` : ''}<label class="setting-inline"><input type="checkbox" ${continuous ? 'checked' : ''} data-draw-continuous /> 连续不重复抽取</label></div><div id="draw-result" class="draw-result empty">点击"开始抽取"选择同学</div></div>
-    <div class="panel"><div class="panel-title"><h2>名单预览 · ${state.names.length} 人</h2><button class="help-link" data-help="names">管理名单 →</button></div><div class="item-list">${state.names.map((person, index) => `<div class="list-item ${continuous && state.drawnIds?.includes(index) ? 'drawn' : ''}"><div><h3>${esc(person.name)}</h3><p>${esc(person.group || '未分组')}${continuous && state.drawnIds?.includes(index) ? ' · 已抽取' : ''}</p></div></div>`).join('') || '<div class="empty">还没有名单，请在设置中创建。</div>'}</div></div>`;
+  return `<section class="view-heading"><h1>随机抽人</h1><div class="inline-actions"><button class="help-link" data-help="random">抽取设置 →</button><button class="help-link" data-help="names">管理名单 →</button></div></section>
+    <section class="draw-workspace">
+      <div class="draw-toolbar">
+        <label class="setting-inline">抽取名单 <select data-draw-list ${drawPending ? 'disabled' : ''}>${state.nameLists.map((list) => `<option value="${esc(list.name)}" ${list.name === state.settings.selectedNameList ? 'selected' : ''}>${esc(list.name)}（${list.names.length} 人）</option>`).join('')}</select></label>
+        <label class="setting-inline"><input type="radio" name="draw-mode" value="single" ${mode === 'single' ? 'checked' : ''} data-draw-mode /> 单人</label>
+        <label class="setting-inline"><input type="radio" name="draw-mode" value="group" ${mode === 'group' ? 'checked' : ''} data-draw-mode /> 多人</label>
+        <label class="setting-inline"><input type="checkbox" ${continuous ? 'checked' : ''} data-draw-continuous /> 连续抽人（不重复）</label>
+        ${mode === 'group' ? `<label class="setting-inline">每组人数 <input type="number" min="1" max="${state.names.length || 1}" value="${state.settings.drawGroupSize || 1}" data-group-size /></label><label class="setting-inline">组数 <input type="number" min="1" max="20" value="${state.settings.drawGroupCount || 1}" data-group-count /></label>` : ''}
+        <button class="btn btn-primary" data-action="draw" ${drawPending ? 'disabled' : ''}>${drawPending ? '抽取中' : '开始抽取'}</button>
+        <button class="btn btn-secondary" data-action="reset-drawn" ${drawPending ? 'disabled' : ''}>重置连续状态</button>
+      </div>
+      <div id="draw-result" class="draw-result ${lastDrawResult ? '' : 'empty'}" role="status" aria-live="polite">${drawResultMarkup()}</div>
+      <div class="draw-counter">已抽 ${continuous ? drawn : 0} 人 · 未抽 ${remaining} 人 · 总人数 ${state.names.length}</div>
+    </section>`;
+}
+
+function drawResultMarkup() {
+  if (!lastDrawResult) return '暂无抽取结果';
+  const fontSize = Math.max(16, Math.min(72, Number(state.settings.drawResultFontSize) || 30));
+  const groups = lastDrawResult.mode === 'single' ? [[lastDrawResult.selected]] : lastDrawResult.groups;
+  return groups.map((group, index) => `<div class="draw-group ${lastDrawResult.mode === 'single' ? 'draw-single' : ''}">${lastDrawResult.mode === 'group' ? `<div class="group-label">第 ${index + 1} 组</div>` : ''}<div class="group-members">${group.map((person) => `<span class="member-chip" title="${esc(person.name)}" style="font-size:${fontSize}px">${esc(person.name)}</span>`).join('')}</div></div>`).join('');
 }
 
 
@@ -311,9 +335,9 @@ function helpView() {
     overview: ['先看这里', '<h3>日常使用顺序</h3><ol><li>在“设置与关于 → 课表”录入或导入课表。</li><li>在“设置与关于 → 名单管理”添加或导入学生名单。</li><li>需要时在“作业布置”记录作业和提醒时间。</li><li>上课时点击左侧对应区块，工具会保留当前页面。</li></ol><h3>启动后看不到主界面</h3><p>这是正常行为：应用启动后只显示桌面时钟。点击桌面时钟会打开主界面的“桌面时钟”区块；也可以从托盘菜单打开。</p>'],
     clock: ['桌面时钟', '<h3>这里显示什么</h3><p>这里显示当前时间、日期和当前课程状态。课表内容不放在时钟区，完整课表请点击左侧“课表”。</p><h3>时钟控制</h3><ul><li>“时钟设置”：调整字体、字号、透明度、置顶等时钟专属选项。</li><li>“倒计时与提醒”：使用 Elegant Clock 的倒计时、番茄钟、秒表和提醒。</li><li>“检查更新”：检查 Education Toolkit 的新版本，并使用直连或代理下载。</li></ul><p>主题颜色、铃声和开机自启动属于工具包全局设置，请到“设置与关于 → 常规设置”修改。</p>'],
     schedule: ['课表', '<h3>录入课程</h3><p>点击“添加课程”，填写科目、课程名、开始时间、课程时长和课间时长。选择具体星期表示只在该天使用；选择“每天”表示每天重复。</p><h3>任课老师</h3><p>老师按科目统一保存。同一科目的课程会使用同一个老师名称，修改某一节课时也会更新该科目的老师。</p><h3>查看和同步</h3><p>上方周课表按星期显示全部课程，当前课程会自动高亮。课表状态会同步到桌面时钟，但编辑课表必须在“课表”区域完成。</p><h3>导入格式</h3><p>导入 JSON 时使用 <code>schedule</code> 数组，每项至少包含 <code>subject</code>、<code>course</code>、<code>start</code>；可选字段为 <code>weekday</code>、<code>duration</code>、<code>breakDuration</code>。</p>'],
-    random: ['随机抽人', '<h3>单人模式</h3><p>每次随机抽取一名学生。</p><h3>分组模式</h3><p>设置每组人数和组数，系统会在本次抽取中避免重复分组。</p><h3>连续不重复</h3><p>打开后，已经抽过的学生会被记录并在名单预览中标记。剩余人数不足以完成下一次抽取时，系统会停止本次抽取；点击“重置记录”后重新开始。</p><p>名单来源是“设置与关于 → 名单管理”中的当前名单。</p>'],
+    random: ['随机抽人', '<h3>单人模式</h3><p>每次随机抽取一名学生。</p><h3>多人模式</h3><p>设置每组人数和组数，系统会在本次抽取中避免重复分组。姓名使用统一字号，按组排列，结果过多时可以上下滚动。</p><h3>连续不重复</h3><p>打开后，已经抽过的学生会被记录，底部显示已抽和未抽人数。剩余人数不足时保留上一轮结果；点击“重置连续状态”后重新开始。</p><p>顶部可以切换抽取名单，切换后清空结果和连续记录；名单由“设置与关于 → 名单管理”维护。</p>'],
     names: ['名单管理', '<h3>手动添加</h3><p>输入姓名，可选填写分组，然后点击“添加名单”。</p><h3>批量导入</h3><p>支持字符串数组或对象数组。例如：<code>[{"name":"张三","group":"一组"}]</code>。也兼容包含 <code>names</code>、<code>students</code> 或 FileGator <code>lists</code> 数据的文件。</p><h3>注意</h3><p>随机抽人使用当前名单。导入名单会替换当前名单，不会追加到旧名单。</p>'],
-    assignments: ['作业布置', '<h3>添加作业</h3><p>名称必填，科目和上交时间可选。可以直接填写上交时间，也可以选择课表课程并设置在课前或课后提醒。</p><h3>完成和删除</h3><p>勾选右侧开关表示已完成；编辑会保留完成状态，删除会立即移除记录。</p><h3>桌面作业状态</h3><p>打开页面右上角的桌面作业状态后，会显示一个置顶小组件。小组件可以拖动，位置会自动保存。</p>'],
+    assignments: ['作业布置', '<h3>添加作业</h3><p>名称必填，科目和上交时间可选。可以直接填写上交时间，也可以选择课表课程并设置在课前或课后提醒。</p><h3>完成和删除</h3><p>勾选右侧开关表示已完成；编辑会保留完成状态，删除会立即移除记录。</p><h3>桌面作业状态</h3><p>打开页面右上角的桌面作业状态后，会显示桌面小组件。它不会始终置顶，切换到其他程序后可以被覆盖；作业更新不会把它带到前台。小组件可以拖动，位置会自动保存。</p>'],
     settings: ['全局设置', '<h3>常规设置</h3><p>主题颜色、默认铃声和开机自启动都在这里设置。时钟区块会自动跟随这些全局设置，不需要重复配置。</p><h3>更新</h3><p>更新检查会显示版本说明。选择直连或代理下载后，程序会先校验安装包大小和 SHA-256，校验成功才会启动安装程序。</p><h3>数据</h3><p>数据保存在 Electron 的用户数据目录中。卸载或清理用户数据前，请先备份课表、名单和作业数据。</p>']
   };
   const [titleText, content] = topics[helpTopic] || topics.overview;
@@ -341,51 +365,50 @@ function bindView() {
   
   // 抽取相关事件
   document.querySelector('[data-action="draw"]')?.addEventListener('click', async () => { 
-    const resultEl = document.querySelector('#draw-result'); 
+    if (drawPending) return;
     if (!state.names.length) { 
-      resultEl.className = 'draw-result empty';
-      resultEl.textContent = '请先在设置中添加名单'; 
+      showToast('请先在设置中添加名单');
       return; 
     } 
-    
-    const result = await api.randomDraw({ 
-      mode: state.settings.drawMode, 
-      groupSize: state.settings.drawGroupSize,
-      groupCount: state.settings.drawGroupCount,
-      continuous: state.settings.drawContinuous 
-    }); 
-    
-    if (result.error) {
-      resultEl.className = 'draw-result error';
-      resultEl.innerHTML = `<div style="font-size:18px;color:#e53e3e">${esc(result.error)}</div>${result.shouldReset ? '<button class="btn btn-secondary" style="margin-top:12px" data-action="reset-drawn-error">重置记录</button>' : ''}`;
-      document.querySelector('[data-action="reset-drawn-error"]')?.addEventListener('click', async () => {
-        await api.resetDrawn();
-        showToast('已重置抽取记录');
-        render();
-      });
-      return;
-    }
-    
-    const fontSize = state.settings.drawResultFontSize || 30;
-    
-    if (result.mode === 'single') {
-      resultEl.className = 'draw-result';
-      resultEl.innerHTML = `<div style="font-size:${fontSize}px;font-weight:700;color:var(--primary-dark)">${esc(result.selected.name)}</div><div style="margin-top:8px;color:var(--muted);font-size:14px">${esc(result.selected.group || '未分组')}${state.settings.drawContinuous ? ` · 剩余 ${result.remaining} 人` : ''}</div>`;
-    } else if (result.mode === 'group') {
-      resultEl.className = 'draw-result';
-      resultEl.innerHTML = result.groups.map((group, index) => 
-        `<div class="draw-group"><div class="group-label">第 ${index + 1} 组</div><div class="group-members">${group.map(p => `<span class="member-chip" style="font-size:${Math.max(16, fontSize - 8)}px">${esc(p.name)}</span>`).join('')}</div></div>`
-      ).join('') + (state.settings.drawContinuous ? `<div style="margin-top:12px;color:var(--muted);font-size:14px">剩余 ${result.remaining} 人</div>` : '');
-    }
-    
-    state = await api.getState();
+    drawPending = true;
     render();
+    try {
+      const result = await api.randomDraw({
+        mode: state.settings.drawMode,
+        groupSize: state.settings.drawGroupSize,
+        groupCount: state.settings.drawGroupCount,
+        continuous: state.settings.drawContinuous
+      });
+      if (result.error) {
+        showToast(result.error);
+        return;
+      }
+      lastDrawResult = result;
+      state = await api.getState();
+    } catch (error) {
+      showToast(error.message || '抽取失败');
+    } finally {
+      drawPending = false;
+      render();
+    }
   });
   
   document.querySelector('[data-action="reset-drawn"]')?.addEventListener('click', async () => {
+    lastDrawResult = null;
     await api.resetDrawn();
+    state = await api.getState();
     showToast('已重置抽取记录');
     render();
+  });
+
+  document.querySelector('[data-draw-list]')?.addEventListener('change', async (event) => {
+    const list = state.nameLists.find((item) => item.name === event.target.value);
+    if (!list) return;
+    lastDrawResult = null;
+    state.settings.selectedNameList = list.name;
+    state.names = structuredClone(list.names);
+    state.drawnIds = [];
+    await save();
   });
   
   document.querySelectorAll('[data-draw-mode]').forEach((element) => element.addEventListener('change', async (event) => {

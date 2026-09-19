@@ -94,6 +94,60 @@ app.whenReady().then(async () => {
     }
     assert.deepEqual(promotions, [], 'Schedule updates must not promote the clock');
     assert.equal(alerts, 0, 'Schedule updates must remain silent');
+    main.show();
+    await main.webContents.executeJavaScript(`(async () => {
+      const names = Array.from({ length: 40 }, (_, index) => ({ name: index === 0 ? 'Long name '.repeat(30) : 'Student ' + (index + 1), group: '' }));
+      state = await api.saveState({ ...state, names, nameLists: [{ name: 'UI test', names }], drawnIds: [], settings: { ...state.settings, selectedNameList: 'UI test', drawMode: 'single', drawContinuous: true, drawResultFontSize: 30 } });
+      navigate('random');
+      document.querySelector('[data-action="draw"]').click();
+    })()`);
+    await until(() => main.webContents.executeJavaScript("!drawPending && document.querySelectorAll('.member-chip').length === 1"));
+    const selected = await main.webContents.executeJavaScript("document.querySelector('.member-chip').textContent");
+    await main.webContents.executeJavaScript("navigate('clock'); navigate('random'); render()");
+    assert.equal(await main.webContents.executeJavaScript("document.querySelector('.member-chip').textContent"), selected, 'Results survive navigation and state redraws');
+    assert.equal(await main.webContents.executeJavaScript('state.drawnIds.length'), 1);
+    await main.webContents.executeJavaScript("document.querySelector('[data-action=\"reset-drawn\"]').click()");
+    await until(() => main.webContents.executeJavaScript("state.drawnIds.length === 0 && !document.querySelector('.member-chip')"));
+    await main.webContents.executeJavaScript(`(async () => {
+      state.settings.drawMode = 'group'; state.settings.drawGroupSize = 2; state.settings.drawGroupCount = 20;
+      await save(); document.querySelector('[data-action="draw"]').click();
+    })()`);
+    await until(() => main.webContents.executeJavaScript("!drawPending && document.querySelectorAll('.member-chip').length === 40"));
+    assert.equal(await main.webContents.executeJavaScript("getComputedStyle(document.querySelector('.member-chip')).fontSize"), '30px');
+    const grouped = await main.webContents.executeJavaScript("document.querySelector('#draw-result').textContent");
+    await main.webContents.executeJavaScript("document.querySelector('[data-action=\"draw\"]').click()");
+    await until(() => main.webContents.executeJavaScript('!drawPending'));
+    assert.equal(await main.webContents.executeJavaScript("document.querySelector('#draw-result').textContent"), grouped, 'Exhaustion preserves previous results');
+    for (const [width, height] of [[1180, 800], [900, 640]]) {
+      main.setSize(width, height);
+      await wait(400);
+      assert.equal(await main.webContents.executeJavaScript(`(() => {
+        const result = document.querySelector('#draw-result');
+        const names = [...document.querySelectorAll('.group-members')];
+        const left = names[0].getBoundingClientRect().left;
+        return result.scrollWidth <= result.clientWidth && result.scrollHeight > result.clientHeight && names.every(item => Math.abs(item.getBoundingClientRect().left - left) < 1);
+      })()`), true, 'Groups align and scroll vertically without horizontal overflow');
+      if (process.env.TOOLKIT_TEST_SCREENSHOTS) {
+        fs.mkdirSync(process.env.TOOLKIT_TEST_SCREENSHOTS, { recursive: true });
+        fs.writeFileSync(path.join(process.env.TOOLKIT_TEST_SCREENSHOTS, 'random-' + width + '.png'), (await main.webContents.capturePage()).toPNG());
+      }
+    }
+    await main.webContents.executeJavaScript(`(async () => {
+      state.settings.drawResultFontSize = 72;
+      await save();
+    })()`);
+    assert.equal(await main.webContents.executeJavaScript("getComputedStyle(document.querySelector('.member-chip')).fontSize"), '72px');
+    assert.equal(await main.webContents.executeJavaScript("document.querySelector('#draw-result').scrollWidth <= document.querySelector('#draw-result').clientWidth"), true);
+    await main.webContents.executeJavaScript(`(async () => {
+      state.nameLists.push({ name: 'Other list', names: [{name: 'Other student', group: ''}] });
+      await save();
+      const select = document.querySelector('[data-draw-list]');
+      select.value = 'Other list'; select.dispatchEvent(new Event('change'));
+    })()`);
+    await until(() => main.webContents.executeJavaScript("state.names.length === 1 && state.settings.selectedNameList === 'Other list' && !document.querySelector('.member-chip')"));
+    assert.equal(await main.webContents.executeJavaScript('state.drawnIds.length'), 0);
+    const clockColors = await clock.webContents.executeJavaScript("['.time-text', '.date-text', '.next-class', '.countdown-summary'].map(selector => getComputedStyle(document.querySelector(selector)).color)");
+    assert.equal(new Set(clockColors).size, 1, 'All desktop clock text uses the time color');
     await clock.webContents.executeJavaScript('shell.openToolkit()');
     await until(() => main.webContents.executeJavaScript("currentView === 'clock'"));
     await main.webContents.executeJavaScript('api.openClockSettings()');
@@ -105,15 +159,32 @@ app.whenReady().then(async () => {
     await main.webContents.executeJavaScript('api.saveState({ ...state, settings: { ...state.settings, homeworkWidgetEnabled: true } })');
     const widget = await until(() => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().endsWith('/widget.html')));
     await until(() => widget.webContents.executeJavaScript("typeof window.educationToolkit === 'object'"));
-    assert.equal(widget.getSize()[0], 54);
+    await until(() => widget.isVisible());
+    assert.equal(widget.isAlwaysOnTop(), false, 'Homework does not stay above other applications');
+    if (process.platform !== 'linux') assert.equal(widget.isFocusable(), false);
+    const widgetPromotions = [];
+    for (const method of ['show', 'showInactive', 'focus', 'restore']) {
+      const original = widget[method].bind(widget);
+      widget[method] = (...args) => { widgetPromotions.push(method); return original(...args); };
+    }
+    assert.deepEqual(widget.getSize(), [81, 81]);
     await widget.webContents.executeJavaScript('educationToolkit.toggleHomeworkWidget(true)');
-    assert.equal(widget.getSize()[0], 310);
+    assert.deepEqual(widget.getSize(), [465, 285]);
     await wait(100);
-    assert.equal(widget.getSize()[0], 310);
+    assert.deepEqual(widget.getSize(), [465, 285]);
+    await main.webContents.executeJavaScript("api.saveState({ ...state, assignments: Array.from({length: 8}, (_, i) => ({ id: String(i), name: 'Assignment ' + i, subject: 'Math' })) })");
+    await until(() => widget.webContents.executeJavaScript("document.querySelectorAll('.assignment').length === 8"));
+    assert.deepEqual(await widget.webContents.executeJavaScript("['.header .title', '.assignment strong', '.assignment span'].map(selector => getComputedStyle(document.querySelector(selector)).fontSize)"), ['18px', '21px', '16.5px']);
+    assert.equal(await widget.webContents.executeJavaScript("document.querySelector('.content').scrollHeight > document.querySelector('.content').clientHeight"), true);
+    if (process.env.TOOLKIT_TEST_SCREENSHOTS) {
+      fs.writeFileSync(path.join(process.env.TOOLKIT_TEST_SCREENSHOTS, 'homework.png'), (await widget.webContents.capturePage()).toPNG());
+      fs.writeFileSync(path.join(process.env.TOOLKIT_TEST_SCREENSHOTS, 'clock.png'), (await clock.webContents.capturePage()).toPNG());
+    }
     await widget.webContents.executeJavaScript('educationToolkit.toggleHomeworkWidget(false)');
     await wait(200);
-    assert.equal(widget.getSize()[0], 54);
+    assert.deepEqual(widget.getSize(), [81, 81]);
     const before = clock.getPosition();
+    assert.deepEqual(widgetPromotions, [], 'Homework updates and resizing must not promote the widget');
     await clock.webContents.executeJavaScript('shell.moveWindowBy(10, 10)');
     await until(() => clock.getPosition()[0] !== before[0] || clock.getPosition()[1] !== before[1]);
     await new Promise((resolve, reject) => {

@@ -62,3 +62,17 @@ button { cursor: pointer; }
 .assignments-panel{max-height:calc(100vh - 280px);display:flex;flex-direction:column}.assignment-list{flex:1;overflow-y:auto;display:grid;gap:10px;padding-right:4px}.assignment-list::-webkit-scrollbar{width:8px}.assignment-list::-webkit-scrollbar-track{background:var(--canvas);border-radius:4px}.assignment-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}.assignment-list::-webkit-scrollbar-thumb:hover{background:var(--muted)}.assignment-item{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface);transition:.15s ease}.assignment-item:hover{border-color:var(--primary);box-shadow:0 2px 8px rgba(104,104,170,0.1)}.assignment-item.done{opacity:.6;background:#fafafa}.assignment-item.done .assignment-name{text-decoration:line-through}.assignment-content{flex:1;min-width:0}.assignment-name{margin:0 0 6px;font-size:15px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.assignment-meta{margin:0;font-size:12px;color:var(--muted);line-height:1.5}.assignment-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
 
 @media(max-width:820px){.week-schedule-header,.schedule-row{grid-template-columns:70px repeat(7,minmax(80px,1fr))}.lesson-name{font-size:12px}.lesson-teacher{font-size:10px}.assignment-item{flex-direction:column;align-items:stretch;gap:12px}.assignment-actions{justify-content:flex-end}.assignment-name{white-space:normal}}
+.draw-workspace { display: flex; flex-direction: column; gap: 14px; height: max(360px, calc(100vh - 250px)); min-width: 0; }
+.draw-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 0; border-block: 1px solid var(--border); }
+.draw-toolbar select { max-width: 280px; min-height: 40px; }
+.draw-toolbar input[type="number"] { width: 80px; min-height: 40px; }
+.draw-workspace .draw-result { display: block; flex: 1; min-height: 180px; padding: 10px; overflow-y: scroll; overflow-x: hidden; scrollbar-gutter: stable; background: #f7fbfd; border: 1px solid #aac6d3; border-radius: 8px; text-align: left; }
+.draw-workspace .draw-result.empty { display: grid; place-items: center; }
+.draw-workspace .draw-result::-webkit-scrollbar { width: 24px; }
+.draw-workspace .draw-result::-webkit-scrollbar-thumb { background: #aac6d3; border: 5px solid #f7fbfd; border-radius: 8px; }
+.draw-workspace .draw-group { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 12px; margin: 0; padding: 7px 10px; background: transparent; border: 0; border-radius: 0; }
+.draw-workspace .draw-single { grid-template-columns: minmax(0, 1fr); }
+.draw-workspace .group-label { margin: 0; padding-top: 14px; color: #1b3f52; font-size: 16px; font-weight: 700; }
+.draw-workspace .group-members { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; min-width: 0; }
+.draw-workspace .member-chip { max-width: 100%; min-width: 0; padding: 7px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(166, 218, 241, .59); border: 1px solid rgba(90, 157, 190, .59); border-radius: 8px; color: #1b3f52; font-weight: 400; line-height: 1.4; letter-spacing: 0; }
+.draw-counter { color: var(--text); font-size: 16px; }
