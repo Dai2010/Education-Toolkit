@@ -100,10 +100,10 @@ async function saveState() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 800,
-    minWidth: 900,
-    minHeight: 640,
+    width: 1280,
+    height: 675,
+    minWidth: 1024,
+    minHeight: 540,
     backgroundColor: '#f8f7fc',
     show: false,
     webPreferences: {
@@ -112,6 +112,7 @@ function createWindow() {
       nodeIntegration: false
     }
   });
+  require('./window-layout').constrainWindow(mainWindow);
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
   mainWindow.on('close', (event) => { if (!app.isQuitting) { event.preventDefault(); mainWindow.hide(); } });
 }

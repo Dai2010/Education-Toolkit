@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { BrowserWindow, ipcMain } = require('electron');
+const { BrowserWindow, ipcMain, net, app } = require('electron');
 
 module.exports = async function testAdjustments(main, clock, until, profile) {
   const run = code => main.webContents.executeJavaScript(code);
@@ -17,9 +17,11 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
     await until(() => run(`!adjustmentSaving && !adjustmentPreview && state.scheduleHistory.length === ${count}`));
   }
   async function open(type, date) {
+    await run("navigate('schedule')");
     await click('[data-new-adjustment]');
     await set('date', date, true);
     await set('type', type, true);
+    await run("document.querySelector('#adjustment-form').requestSubmit()");
   }
   await run(`(async () => {
     state = await api.saveState({ ...state, schedule: [
@@ -30,7 +32,7 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
     ], settings:{...state.settings, subjectTeachers:{数学:'甲老师', 英语:'乙老师'}} });
     actualWeekDate = '2030-01-07'; navigate('schedule');
   })()`);
-  await click('[data-adjust-date="2030-01-07"][data-adjust-lesson="math"]');
+  await open('swap', '2030-01-07');
   await set('targetDate', '2030-01-15', true);
   await set('targetLessonId', 'english');
   await set('reason', '跨周调课测试');
@@ -67,6 +69,8 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
   assert.equal(await run("ToolkitSchedule.forDate(state, '2030-01-07').length"), 0);
   assert.equal(await run("ToolkitSchedule.forDate(state, '2030-01-09')[0].course"), '英语');
   const first = await run('state.scheduleHistory[0].id');
+  await click('[data-new-adjustment]');
+  await click('[data-wizard-history]');
   await click(`[data-undo-adjustment="${first}"]`);
   assert.equal(await run('adjustmentPreview === null'), true, 'Dependent undo must be rejected');
   assert.match(await run('toast.textContent'), /后续调整/);
@@ -76,6 +80,8 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
   await confirm(3);
   assert.equal(await run('state.assignments[0].schedulePaused'), true);
   const offId = await run('state.scheduleHistory[2].id');
+  await click('[data-new-adjustment]');
+  await click('[data-wizard-history]');
   await click(`[data-undo-adjustment="${offId}"]`);
   await confirm(3);
   assert.equal(await run('state.assignments[0].dueAt'), new Date('2030-01-15T09:00:00').toISOString());
@@ -102,6 +108,36 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
     fs.writeFileSync(path.join(process.env.TOOLKIT_TEST_SCREENSHOTS, 'actual-schedule.png'), (await main.webContents.capturePage()).toPNG());
   }
   await run(`api.saveState(${JSON.stringify(snapshot)})`);
+
+  await run("navigate('schedule')");
+  assert.equal(await run("Boolean(document.querySelector('#adjustment-form, #adjustment-preview'))"), false);
+  await open('off', '2030-01-07');
+  await set('reason', '应被取消的草稿');
+  assert.equal(await run(`(() => { const rect = document.querySelector('#adjustment-form button[type=submit]').getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight; })()`), true, 'Next step remains visible at minimum window size');
+  await click('[data-wizard-previous]');
+  assert.equal(await run('adjustmentStep'), 1);
+  await run("document.querySelector('#adjustment-form').requestSubmit()");
+  assert.equal(await run("document.querySelector('[name=reason]').value"), '应被取消的草稿');
+  await preview();
+  assert.equal(await run(`(() => { const rect = document.querySelector('[data-confirm-adjustment]').getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight; })()`), true, 'Confirm remains visible without scrolling the page');
+  const beforeCancel = await run('(async () => JSON.stringify(await api.getState()))()');
+  await click('#back-btn');
+  assert.equal(await run("currentView === 'schedule' && !adjustmentDraft && !adjustmentPreview"), true);
+  assert.equal(await run('(async () => JSON.stringify(await api.getState()))()'), beforeCancel);
+  await open('off', '2030-01-07');
+  await run("navigate('settings')");
+  assert.equal(await run('adjustmentDraft === null'), true);
+
+  const originalFetch = net.fetch;
+  try {
+    net.fetch = async () => new Response(JSON.stringify({ tag_name: `v${app.getVersion()}`, name: '最新发布', body: '## 最新说明\n\n已安装版本也能看到。', published_at: '2026-09-21T00:00:00Z', html_url: 'https://github.com/Dai2010/Education-Toolkit/releases/tag/v1.0.7', assets: [] }), { status: 200 });
+    await run("settingsTab = 'general'; navigate('settings'); document.querySelector('[data-action=\"check-updates\"]').click()");
+    const latest = await until(() => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/update.html')));
+    await until(() => latest.webContents.executeJavaScript("document.querySelector('h1')?.textContent === '当前已是最新版本'"));
+    assert.match(await latest.webContents.executeJavaScript("document.querySelector('#release-notes').textContent"), /已安装版本也能看到/);
+    assert.equal(await latest.webContents.executeJavaScript("document.querySelector('#direct-update-button').hidden"), true);
+    latest.destroy();
+  } finally { net.fetch = originalFetch; }
 
   ipcMain.removeHandler('app:get-update-info');
   ipcMain.handle('app:get-update-info', () => ({ releaseName: 'Education Toolkit test', currentVersion: '1.0.6', latestVersion: '1.0.7', releaseNotes: '##新增功能\n\n- **加粗**\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n[链接](https://github.com)\n\n<img src=x onerror="window.injected=true"><script>window.injected=true</script>', releaseUrl: 'https://github.com/Dai2010/Education-Toolkit/releases', asset: null }));

@@ -258,7 +258,7 @@ function createUpdateInfo(release, currentVersion, platform, architecture, linux
     !release
     || release.draft
     || release.prerelease
-    || compareVersions(release.tag_name, currentVersion) !== 1
+    || compareVersions(release.tag_name, currentVersion) === null
   ) {
     return null;
   }
@@ -268,6 +268,7 @@ function createUpdateInfo(release, currentVersion, platform, architecture, linux
   const releaseNotes = truncateText(release.body, maxReleaseNotesLength) || '该版本未提供更新说明。';
 
   return {
+    updateAvailable: compareVersions(release.tag_name, currentVersion) === 1,
     currentVersion: formatVersion(currentVersion),
     latestVersion,
     releaseName,

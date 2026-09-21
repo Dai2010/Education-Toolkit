@@ -28,7 +28,7 @@ const formatDate = (date) => new Intl.DateTimeFormat('zh-CN', { month: 'long', d
 const formatDateTime = (value) => value ? new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value)) : '未设置时间';
 const showToast = (message) => { toast.textContent = message; toast.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove('show'), 2600); };
 const save = async () => { state = await api.saveState(state); render(); };
-const navigate = (view) => { if (view !== currentView) previousView = currentView; currentView = view; render(); };
+const navigate = (view) => { if (adjustmentSaving) return; if (currentView === 'adjustments' && view !== currentView) { adjustmentDraft = null; adjustmentPreview = null; } if (view !== currentView) previousView = currentView; currentView = view; render(); };
 
 function render() {
   document.documentElement.style.setProperty('--primary', state?.settings?.themeColor || '#8888CC');
@@ -352,7 +352,8 @@ function settingsView() {
   if (settingsTab === 'schedule') settingsTab = 'general';
   return `<section class="view-heading"><div><div class="eyebrow">WORKSPACE SETTINGS</div><h1>设置与关于</h1><p>将工具调整成适合你课堂节奏的样子。</p></div></section><div class="settings-layout"><nav class="settings-tabs">${[['general', '常规设置'], ['names', '名单管理'], ['schedule', '课表管理'], ['help', '帮助与关于']].map(([key, label]) => `<button class="settings-tab ${settingsTab === key ? 'active' : ''}" data-settings-tab="${key}">${label}</button>`).join('')}</nav><div class="settings-content"><div class="setting-section ${settingsTab === 'general' ? 'active' : ''}" data-section="general"><div class="panel"><div class="panel-title"><div><h2>外观与提醒</h2><p>颜色会立即应用到整个工具包。</p></div></div><div class="setting-row"><div><h3>主题颜色</h3><p>默认颜色为 #8888CC</p></div><input id="theme-color" class="color-input" type="color" value="${esc(state.settings.themeColor)}" /></div><div class="setting-row"><div><h3>默认铃声</h3><p>${esc(state.settings.ringtonePath || 'lofi-beats.mp3（FileGator）')}</p></div><button class="btn btn-secondary" data-action="pick-ringtone">选择铃声</button></div><div class="setting-row"><div><h3>全局更新</h3><p>打开最新版本发布页检查更新。</p></div><button class="btn btn-secondary" data-action="check-updates">检查更新</button></div><div class="setting-row"><div><h3>开机自启动</h3><p id="autostart-copy">正在检测系统状态…</p></div><label class="switch"><input id="autostart-toggle" type="checkbox" ${state.settings.autostart ? 'checked' : ''} /><span class="slider"></span></label></div></div><div class="panel"><div class="panel-title"><div><h2>随机抽人设置</h2><p>调整抽取结果的显示样式。</p></div></div><div class="setting-row"><div><h3>结果字号</h3><p>抽取结果显示的字体大小，默认 30px</p></div><input id="draw-font-size" type="number" min="16" max="72" value="${state.settings.drawResultFontSize || 30}" style="width:80px" /></div></div></div>${namesSection()}${scheduleSection()}${helpView()}</div></div>`;
 }
-const views = { home: homeView, random: randomView, clock: clockView, schedule: scheduleView, assignments: assignmentsView, settings: settingsView };
+const views = { home: homeView, random: randomView, clock: clockView, schedule: scheduleView, adjustments: adjustmentWizardView, assignments: assignmentsView, settings: settingsView };
+viewTitles.adjustments = '调休 / 调课';
 
 function bindView() {
   bindAdjustments();
@@ -454,7 +455,7 @@ function bindView() {
   document.querySelector('#desktop-clock-toggle')?.addEventListener('change', async (event) => { state.settings.desktopWidgetEnabled = event.target.checked; await save(); showToast(event.target.checked ? '已开启桌面时钟显示' : '已关闭桌面时钟显示'); });
   document.querySelector('#autostart-toggle')?.addEventListener('change', async (event) => { const actual = await api.setAutostart(event.target.checked); state.settings.autostart = actual; event.target.checked = actual; const copy = document.querySelector('#autostart-copy'); if (copy) copy.textContent = actual ? '系统当前已开启' : '系统当前未开启'; showToast(actual ? '已开启开机自启动' : '已关闭开机自启动'); });
   document.querySelector('#clock-autostart-toggle')?.addEventListener('change', async (event) => { const actual = await api.setAutostart(event.target.checked); state.settings.autostart = actual; event.target.checked = actual; await save(); showToast(actual ? '已开启开机自启动' : '已关闭开机自启动'); });
-  document.querySelector('[data-action="check-updates"]')?.addEventListener('click', async () => { await api.checkForUpdates(); showToast('已打开更新页面'); });
+  document.querySelector('[data-action="check-updates"]')?.addEventListener('click', async () => { const result = await api.checkForUpdates(); showToast(result?.ok ? '已打开最新发布信息' : result?.error || '检查更新失败'); });
   document.querySelector('[data-action="pick-ringtone"]')?.addEventListener('click', async () => { const selected = await api.pickRingtone(); if (selected) { state.settings.ringtonePath = selected; await save(); showToast('铃声已更新'); } });
   document.querySelector('#name-form')?.addEventListener('submit', onNameSubmit);
   document.querySelector('[data-action="import-names"]')?.addEventListener('click', importNames);
@@ -708,7 +709,7 @@ function refreshClockSchedule(now) {
 function startClock() { clearInterval(clockTimer); let lastDay = ToolkitSchedule.weekday(new Date()); const tick = () => { const now = new Date(); const currentDay = ToolkitSchedule.weekday(now); if (currentDay !== lastDay) { lastDay = currentDay; render(); return; } const summary = document.querySelector('#clock-summary'); if (summary) summary.innerHTML = clockSummaryMarkup(); refreshClockSchedule(now); headerTime.textContent = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now); const dateElement = document.querySelector('#clock-date'); const timeElement = document.querySelector('#clock-time'); if (dateElement) dateElement.textContent = formatDate(now); if (timeElement) timeElement.textContent = now.toLocaleTimeString('zh-CN', { hour12: false }); }; tick(); clockTimer = setInterval(tick, 1000); }
 
 document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click', () => navigate(item.dataset.view)));
-backButton.addEventListener('click', () => { currentView = previousView || 'home'; render(); });
+backButton.addEventListener('click', () => navigate(currentView === 'adjustments' ? 'schedule' : previousView === 'adjustments' ? 'schedule' : previousView || 'home'));
 api.onNavigate((view) => { if (viewTitles[view]) navigate(view); });
 api.onReminderDue(({ assignment }) => { showToast(`作业提醒：${assignment.name}`); });
 api.onStateUpdated((next) => { state = next; render(); });

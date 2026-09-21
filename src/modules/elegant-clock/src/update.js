@@ -41,7 +41,12 @@ function renderUpdateInfo(info) {
   elements.releaseNotes.innerHTML = DOMPurify.sanitize(marked.parse(notes, { gfm: true }), {
     USE_PROFILES: { html: true }, FORBID_TAGS: ['img', 'style', 'input', 'form'], FORBID_ATTR: ['style', 'id', 'name']
   });
-  document.title = `Education Toolkit v${info.latestVersion} 可用`;
+  const available = info.updateAvailable !== false;
+  document.querySelector('h1').textContent = available ? '发现新版本' : '当前已是最新版本';
+  document.title = available ? `Education Toolkit v${info.latestVersion} 可用` : 'Education Toolkit · 最新发布信息';
+  elements.directUpdateButton.hidden = !available;
+  elements.proxyUpdateButton.hidden = !available;
+  elements.laterButton.textContent = available ? '稍后再说' : '关闭';
 
   const publishedAt = formatPublishedAt(info.publishedAt);
   elements.publishedAt.hidden = !publishedAt;
@@ -119,6 +124,7 @@ function closeWindow() {
 }
 
 async function init() {
+  shell?.onUpdateInfo?.(info => { if (!updateInProgress) renderUpdateInfo(info); });
   elements.releaseNotes.addEventListener('click', event => {
     const link = event.target.closest('a');
     if (!link) return;

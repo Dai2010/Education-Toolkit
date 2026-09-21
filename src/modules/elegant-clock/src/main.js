@@ -1049,7 +1049,7 @@ async function performUpdateCheck() {
     );
 
     return {
-      status: latestUpdateInfo ? 'update-available' : 'up-to-date',
+      status: latestUpdateInfo?.updateAvailable ? 'update-available' : 'up-to-date',
       currentVersion: app.getVersion(),
       latestVersion: latestUpdateInfo?.latestVersion || app.getVersion()
     };
@@ -1086,7 +1086,7 @@ async function checkForUpdatesOnLaunch() {
 async function checkForUpdates() {
   try {
     const result = await performUpdateCheck();
-    if (result.status === 'update-available' && !isQuitting) {
+    if (latestUpdateInfo && !isQuitting) {
       createUpdateWindow();
     }
     return { ok: true, ...result };
@@ -1850,10 +1850,10 @@ function createManagedWindow(kind, options) {
   }
 
   const window = new BrowserWindow({
-    width: options.width,
-    height: options.height,
-    minWidth: options.minWidth,
-    minHeight: options.minHeight,
+    width: 1024,
+    height: 540,
+    minWidth: 1024,
+    minHeight: 540,
     title: options.title,
     frame: true,
     backgroundColor: '#101623',
@@ -1867,6 +1867,7 @@ function createManagedWindow(kind, options) {
     }
   });
 
+  require('../../../window-layout').constrainWindow(window);
   window.setMenuBarVisibility(false);
   window.once('ready-to-show', () => {
     window.show();
@@ -1930,10 +1931,10 @@ function createAboutWindow() {
   const aboutFileUrl = pathToFileURL(aboutFilePath).toString();
 
   aboutWindow = new BrowserWindow({
-    width: 500,
-    height: 430,
-    minWidth: 420,
-    minHeight: 360,
+    width: 1024,
+    height: 540,
+    minWidth: 1024,
+    minHeight: 540,
     title: '关于桌面时钟',
     parent: mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
     modal: false,
@@ -1968,6 +1969,7 @@ function createAboutWindow() {
     event.preventDefault();
     openExternalUrlSafely(url);
   });
+  require('../../../window-layout').constrainWindow(aboutWindow);
   aboutWindow.loadFile(aboutFilePath);
 }
 
@@ -1977,6 +1979,7 @@ function createUpdateWindow() {
   }
 
   if (updateWindow && !updateWindow.isDestroyed()) {
+    updateWindow.webContents.send('update:info', clone(latestUpdateInfo));
     updateWindow.show();
     updateWindow.focus();
     return updateWindow;
@@ -1986,10 +1989,10 @@ function createUpdateWindow() {
   const updateFileUrl = pathToFileURL(updateFilePath).toString();
 
   updateWindow = new BrowserWindow({
-    width: 620,
-    height: 680,
-    minWidth: 460,
-    minHeight: 520,
+    width: 1024,
+    height: 540,
+    minWidth: 1024,
+    minHeight: 540,
     title: 'Education Toolkit 更新',
     frame: true,
     backgroundColor: '#17191c',
@@ -2025,6 +2028,7 @@ function createUpdateWindow() {
     event.preventDefault();
     openExternalUrlSafely(url);
   });
+  require('../../../window-layout').constrainWindow(updateWindow);
   updateWindow.loadFile(updateFilePath);
 
   return updateWindow;
