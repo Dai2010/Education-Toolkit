@@ -59,6 +59,12 @@ function comparePrereleaseIdentifiers(left, right) {
   return left > right ? 1 : -1;
 }
 
+function fixRevision(version) {
+  if (version.prerelease.length !== 1) return null;
+  const match = version.prerelease[0].match(/^fix([1-9]\d*)$/i);
+  return match ? Number(match[1]) : null;
+}
+
 function compareVersions(left, right) {
   const parsedLeft = parseVersion(left);
   const parsedRight = parseVersion(right);
@@ -72,6 +78,14 @@ function compareVersions(left, right) {
     if (comparison !== 0) {
       return comparison;
     }
+  }
+
+  const leftFix = fixRevision(parsedLeft);
+  const rightFix = fixRevision(parsedRight);
+  if (leftFix !== null || rightFix !== null) {
+    if (leftFix !== null && rightFix !== null) return leftFix === rightFix ? 0 : leftFix > rightFix ? 1 : -1;
+    if (leftFix !== null) return parsedRight.prerelease.length === 0 ? 1 : 1;
+    return parsedLeft.prerelease.length === 0 ? -1 : -1;
   }
 
   if (parsedLeft.prerelease.length === 0 || parsedRight.prerelease.length === 0) {

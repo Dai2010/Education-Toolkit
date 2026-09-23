@@ -36,6 +36,6 @@ jobs:
             dist/*.exe
             dist/*.msi
           generate_release_notes: false
-          body_path: .github/release-v1.0.8-fix1.md
+          body_path: .github/release-v1.0.8-fix2.md
           prerelease: false
           make_latest: true
