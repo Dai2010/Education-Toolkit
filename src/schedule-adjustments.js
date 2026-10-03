@@ -28,7 +28,7 @@ function adjustmentWizardView() {
 function adjustmentEditor() {
   const draft = adjustmentDraft;
   const options = (date, selected) => ToolkitSchedule.forDate(state, date).map(row => `<option value="${esc(row.id)}" ${row.id === selected ? 'selected' : ''}>${row.start} ${esc(row.course)}${row.teacher ? ` · ${esc(row.teacher)}` : ''}</option>`).join('');
-  return `<section class="panel" id="adjustment-editor"><h2>调整具体日期</h2><p>交换两节课保留各自时间和时长；自定义安排保存独立副本。“按其他星期上课”会跟随基础课表修改。</p>
+  return `<section class="panel" id="adjustment-editor" aria-label="调整具体日期"><p>交换两节课保留各自时间和时长；自定义安排保存独立副本。“按其他星期上课”会跟随基础课表修改。</p>
     <form id="adjustment-form"><div class="form-grid">
     <label class="form-field">操作<select name="type">${Object.entries(adjustmentTypes).filter(([key]) => key !== 'undo').map(([key, label]) => `<option value="${key}" ${draft.type === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
     <label class="form-field">原日期 / 开始日期<input name="date" type="date" required value="${draft.date}"></label>
