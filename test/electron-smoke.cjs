@@ -217,4 +217,6 @@ app.whenReady().then(async () => {
     app.exit(1);
   }
 });
-app.on('will-quit', () => fs.rmSync(profile, { recursive: true, force: true }));
+// 退出时清理临时 profile。Windows 上 Chromium 可能仍占着该目录（实测 EPERM），所以绝不能抛错：
+// will-quit 里抛异常会把退出流程本身卡死（CI 上表现为步骤挂住不结束）。
+app.on('will-quit', () => { try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* 留给系统临时目录回收 */ } });
