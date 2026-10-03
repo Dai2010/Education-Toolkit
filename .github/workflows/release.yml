@@ -25,7 +25,6 @@ jobs:
       - name: Unit tests
         run: npm test
       - name: Electron integration tests
-        if: runner.os != 'Windows'
         run: npm run test:ui
       - name: Build EXE and MSI
         run: npm run dist
@@ -36,6 +35,6 @@ jobs:
             dist/*.exe
             dist/*.msi
           generate_release_notes: false
-          body_path: .github/release-v1.0.8-fix2.md
+          body_path: .github/release-v1.0.8-fix3.md
           prerelease: false
           make_latest: true

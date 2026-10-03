@@ -131,7 +131,7 @@ app.whenReady().then(async () => {
     await main.webContents.executeJavaScript("document.querySelector('[data-action=\"draw\"]').click()");
     await until(() => main.webContents.executeJavaScript('!drawPending'));
     assert.equal(await main.webContents.executeJavaScript("document.querySelector('#draw-result').textContent"), grouped, 'Exhaustion preserves previous results');
-    for (const [width, height] of [[1180, 800], [900, 640]]) {
+    for (const [width, height] of [[1180, 800], [1024, 540]]) {
       main.setSize(width, height);
       await wait(400);
       assert.equal(await main.webContents.executeJavaScript(`(() => {
@@ -209,10 +209,15 @@ app.whenReady().then(async () => {
     await require('./electron-adjustments.cjs')(main, clock, until, profile);
     assert.deepEqual(errors, []);
     console.log(`Electron UI verified: ${checks} lesson starts, all weekday tables, embedded clock, tools, settings, drag and watchdog.`);
+    // 先把兜底定时器挂上再退出：app.quit() 一旦同步阻塞，写在它后面的 setTimeout 根本没机会注册。
+    const forcedExit = setTimeout(() => app.exit(0), 5000);
+    forcedExit.unref();
     app.quit();
   } catch (error) {
     console.error(error, errors);
     app.exit(1);
   }
 });
-app.on('will-quit', () => fs.rmSync(profile, { recursive: true, force: true }));
+// 退出时清理临时 profile。Windows 上 Chromium 可能仍占着该目录（实测 EPERM），所以绝不能抛错：
+// will-quit 里抛异常会把退出流程本身卡死（CI 上表现为步骤挂住不结束）。
+app.on('will-quit', () => { try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* 留给系统临时目录回收 */ } });

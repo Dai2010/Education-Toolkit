@@ -21,14 +21,14 @@ function actualSchedulePanel() {
 }
 
 function adjustmentWizardView() {
-  if (adjustmentStep === 0) return `<section class="panel wizard"><h2>调课记录</h2><div class="wizard-body">${[...(state.scheduleHistory || [])].reverse().map(record => `<div class="list-item"><div><h3>${esc(adjustmentTypes[record.type])}${record.undone ? ' · 已撤销' : ''}</h3><p>${record.dates.map(esc).join('、')} ${esc(record.reason)}</p></div>${record.undone ? '' : `<button class="btn btn-secondary" data-undo-adjustment="${esc(record.id)}">预览撤销</button>`}</div>`).join('') || '暂无记录'}</div><div class="actions"><button class="btn btn-secondary" data-wizard-start>返回新建调整</button></div></section>`;
-  return `<div class="wizard-heading"><h2>${adjustmentStep === 3 ? '3 · 确认调整' : adjustmentStep === 2 ? '2 · 设置具体安排' : '1 · 选择操作和日期'}</h2><p>仅最终确认才保存。页面顶部返回键或离开此页面会丢弃本次未确认修改。</p></div>${adjustmentStep === 3 && adjustmentPreview ? adjustmentPreviewMarkup() : adjustmentEditor()}`;
+  if (adjustmentStep === 0) return `<section class="wizard-shell"><section class="panel wizard"><h2>调课记录</h2><div class="wizard-body">${[...(state.scheduleHistory || [])].reverse().map(record => `<div class="list-item"><div><h3>${esc(adjustmentTypes[record.type])}${record.undone ? ' · 已撤销' : ''}</h3><p>${record.dates.map(esc).join('、')} ${esc(record.reason)}</p></div>${record.undone ? '' : `<button class="btn btn-secondary" data-undo-adjustment="${esc(record.id)}">预览撤销</button>`}</div>`).join('') || '暂无记录'}</div><div class="actions"><button class="btn btn-secondary" data-wizard-start>返回新建调整</button></div></section></section>`;
+  return `<section class="wizard-shell"><div class="wizard-heading"><h2>${adjustmentStep === 3 ? '3 · 确认调整' : adjustmentStep === 2 ? '2 · 设置具体安排' : '1 · 选择操作和日期'}</h2><p>仅最终确认才保存。页面顶部返回键或离开此页面会丢弃本次未确认修改。</p></div>${adjustmentStep === 3 && adjustmentPreview ? adjustmentPreviewMarkup() : adjustmentEditor()}</section>`;
 }
 
 function adjustmentEditor() {
   const draft = adjustmentDraft;
   const options = (date, selected) => ToolkitSchedule.forDate(state, date).map(row => `<option value="${esc(row.id)}" ${row.id === selected ? 'selected' : ''}>${row.start} ${esc(row.course)}${row.teacher ? ` · ${esc(row.teacher)}` : ''}</option>`).join('');
-  return `<section class="panel" id="adjustment-editor"><h2>调整具体日期</h2><p>交换两节课保留各自时间和时长；自定义安排保存独立副本。“按其他星期上课”会跟随基础课表修改。</p>
+  return `<section class="panel" id="adjustment-editor" aria-label="调整具体日期"><p>交换两节课保留各自时间和时长；自定义安排保存独立副本。“按其他星期上课”会跟随基础课表修改。</p>
     <form id="adjustment-form"><div class="form-grid">
     <label class="form-field">操作<select name="type">${Object.entries(adjustmentTypes).filter(([key]) => key !== 'undo').map(([key, label]) => `<option value="${key}" ${draft.type === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
     <label class="form-field">原日期 / 开始日期<input name="date" type="date" required value="${draft.date}"></label>

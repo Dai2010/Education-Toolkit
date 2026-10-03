@@ -25,7 +25,9 @@ function showToolkit(view = 'clock') {
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLine) => {
+    // 开机自启动拉起的第二个实例只负责唤醒常驻时钟，不能把主界面弹出来。
+    if (commandLine.includes('--autostart')) return;
     // 第二次从快捷方式启动时，主页面可能仍被隐藏到托盘；必须显式恢复它。
     if (app.isReady()) showToolkit();
     else app.whenReady().then(() => showToolkit());
