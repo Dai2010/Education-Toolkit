@@ -131,7 +131,7 @@ app.whenReady().then(async () => {
     await main.webContents.executeJavaScript("document.querySelector('[data-action=\"draw\"]').click()");
     await until(() => main.webContents.executeJavaScript('!drawPending'));
     assert.equal(await main.webContents.executeJavaScript("document.querySelector('#draw-result').textContent"), grouped, 'Exhaustion preserves previous results');
-    for (const [width, height] of [[1180, 800], [900, 640]]) {
+    for (const [width, height] of [[1180, 800], [1024, 540]]) {
       main.setSize(width, height);
       await wait(400);
       assert.equal(await main.webContents.executeJavaScript(`(() => {

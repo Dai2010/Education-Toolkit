@@ -87,6 +87,10 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
   assert.equal(await run('state.assignments[0].dueAt'), new Date('2030-01-15T09:00:00').toISOString());
   await open('custom', '2030-01-09');
   await run("document.querySelector('[data-custom-row] [data-field=course]').value = '临时班会'; document.querySelector('[data-custom-row] [data-field=teacher]').value = '代课老师'");
+  main.setSize(1180, 800);
+  await new Promise(resolve => setTimeout(resolve, 400));
+  const editorArea = await run(`(() => { const body = document.querySelector('#adjustment-editor .wizard-body'); const row = document.querySelector('[data-custom-row] .form-field'); return { area: body.clientHeight, row: row.getBoundingClientRect().height }; })()`);
+  assert.ok(editorArea.area >= editorArea.row * 5, 'Adjustment fields must show at least five form rows');
   await preview();
   await confirm(4);
   assert.equal(await run("ToolkitSchedule.forDate(state, '2030-01-09')[0].teacher"), '代课老师');
@@ -113,7 +117,11 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
   assert.equal(await run("Boolean(document.querySelector('#adjustment-form, #adjustment-preview'))"), false);
   await open('off', '2030-01-07');
   await set('reason', '应被取消的草稿');
-  assert.equal(await run(`(() => { const rect = document.querySelector('#adjustment-form button[type=submit]').getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight; })()`), true, 'Next step remains visible at minimum window size');
+  main.setSize(1024, 540);
+  await new Promise(resolve => setTimeout(resolve, 400));
+  const submitVisible = `(() => { const rect = document.querySelector('#adjustment-form button[type=submit]').getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight; })()`;
+  assert.equal(await run(`document.querySelector('.content').scrollTop = 0; ${submitVisible}`), true, 'Next step stays visible at the top of the page');
+  assert.equal(await run(`document.querySelector('.content').scrollTop = 99999; ${submitVisible}`), true, 'Next step stays visible at the bottom of the page');
   await click('[data-wizard-previous]');
   assert.equal(await run('adjustmentStep'), 1);
   await run("document.querySelector('#adjustment-form').requestSubmit()");
