@@ -209,9 +209,10 @@ app.whenReady().then(async () => {
     await require('./electron-adjustments.cjs')(main, clock, until, profile);
     assert.deepEqual(errors, []);
     console.log(`Electron UI verified: ${checks} lesson starts, all weekday tables, embedded clock, tools, settings, drag and watchdog.`);
+    // 先把兜底定时器挂上再退出：app.quit() 一旦同步阻塞，写在它后面的 setTimeout 根本没机会注册。
+    const forcedExit = setTimeout(() => app.exit(0), 5000);
+    forcedExit.unref();
     app.quit();
-    // 实测 app.quit() 在 CI 上跑完不一定让进程结束（步骤挂了 20 分钟）；先优雅退出让 will-quit 清 profile，再兜底强退。
-    setTimeout(() => app.exit(0), 5000);
   } catch (error) {
     console.error(error, errors);
     app.exit(1);

@@ -21,8 +21,8 @@ function actualSchedulePanel() {
 }
 
 function adjustmentWizardView() {
-  if (adjustmentStep === 0) return `<section class="panel wizard"><h2>调课记录</h2><div class="wizard-body">${[...(state.scheduleHistory || [])].reverse().map(record => `<div class="list-item"><div><h3>${esc(adjustmentTypes[record.type])}${record.undone ? ' · 已撤销' : ''}</h3><p>${record.dates.map(esc).join('、')} ${esc(record.reason)}</p></div>${record.undone ? '' : `<button class="btn btn-secondary" data-undo-adjustment="${esc(record.id)}">预览撤销</button>`}</div>`).join('') || '暂无记录'}</div><div class="actions"><button class="btn btn-secondary" data-wizard-start>返回新建调整</button></div></section>`;
-  return `<div class="wizard-heading"><h2>${adjustmentStep === 3 ? '3 · 确认调整' : adjustmentStep === 2 ? '2 · 设置具体安排' : '1 · 选择操作和日期'}</h2><p>仅最终确认才保存。页面顶部返回键或离开此页面会丢弃本次未确认修改。</p></div>${adjustmentStep === 3 && adjustmentPreview ? adjustmentPreviewMarkup() : adjustmentEditor()}`;
+  if (adjustmentStep === 0) return `<section class="wizard-shell"><section class="panel wizard"><h2>调课记录</h2><div class="wizard-body">${[...(state.scheduleHistory || [])].reverse().map(record => `<div class="list-item"><div><h3>${esc(adjustmentTypes[record.type])}${record.undone ? ' · 已撤销' : ''}</h3><p>${record.dates.map(esc).join('、')} ${esc(record.reason)}</p></div>${record.undone ? '' : `<button class="btn btn-secondary" data-undo-adjustment="${esc(record.id)}">预览撤销</button>`}</div>`).join('') || '暂无记录'}</div><div class="actions"><button class="btn btn-secondary" data-wizard-start>返回新建调整</button></div></section></section>`;
+  return `<section class="wizard-shell"><div class="wizard-heading"><h2>${adjustmentStep === 3 ? '3 · 确认调整' : adjustmentStep === 2 ? '2 · 设置具体安排' : '1 · 选择操作和日期'}</h2><p>仅最终确认才保存。页面顶部返回键或离开此页面会丢弃本次未确认修改。</p></div>${adjustmentStep === 3 && adjustmentPreview ? adjustmentPreviewMarkup() : adjustmentEditor()}</section>`;
 }
 
 function adjustmentEditor() {

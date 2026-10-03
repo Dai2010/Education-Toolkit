@@ -89,16 +89,18 @@ button { cursor: pointer; }
 .embedded-clock-tools { max-width: 1180px; margin: -35px auto 40px; padding: 0 42px; }
 .embedded-clock-tools iframe { display: block; width: 100%; height: 760px; border: 1px solid var(--border); border-radius: 14px; background: white; }
 .wizard [hidden], #adjustment-form [hidden] { display: none !important; }
-/* 243px = 顶栏 76 + 内容区上内边距 38 + 步骤标题 69 + 底部内边距 60。面板高度锁在视口内：
-   标题在上、按钮占最下面一行、只有中间字段区滚动，按钮任何时候都不会被滚出视野。 */
-.wizard { height: calc(100vh - 243px); display: flex; flex-direction: column; }
+/* 外壳高度 = 100vh − 顶栏 76 − 内容区上内边距 38 − 底部内边距 60。步骤标题放进外壳内部，
+   于是标题换行只会挤压中间的字段区，不会再动按钮的位置；面板因此不必用估算出来的固定高度。 */
+.wizard-shell { height: calc(100vh - 174px); min-height: 0; display: flex; flex-direction: column; }
+.wizard-shell > .wizard-heading { flex: 0 0 auto; }
+.wizard-shell > .panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.wizard { display: flex; flex-direction: column; }
 .wizard h2, .wizard > p { flex: 0 0 auto; margin: 0 0 8px; }
 .wizard form { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .wizard-body { flex: 1; min-height: 0; overflow-y: auto; }
 .wizard .actions, #adjustment-preview .actions { flex: 0 0 auto; position: sticky; bottom: 0; background: var(--surface); padding: 12px 0 0; margin-top: 12px; }
 .wizard-heading h2 { margin: 0; }
 .wizard-heading p { margin: 8px 0 12px; }
-#adjustment-preview { height: calc(100vh - 243px); display: flex; flex-direction: column; }
 .nav-item { min-height: 48px; }
 .nav-item span { flex: 0 0 20px; }
 .module-icon, .brand-mark, .back-btn { flex-shrink: 0; }
