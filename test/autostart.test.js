@@ -5,15 +5,49 @@ const os = require('node:os');
 const path = require('node:path');
 const createAutostart = require('../src/autostart');
 
-test('Windows startup is checked using the same path and arguments as the saved entry', () => {
-  let saved;
-  const app = { isPackaged: true, getAppPath: () => '/app',
-    setLoginItemSettings: (value) => { saved = value; },
-    getLoginItemSettings: (value) => { assert.equal(value.path, saved.path); assert.deepEqual(value.args, saved.args); assert.equal(value.name, saved.name); return { openAtLogin: saved.openAtLogin }; }
+const windowsApp = () => ({ isPackaged: true, getAppPath: () => '/app' });
+
+test('Windows autostart reads the run entry directly, so set and get agree', () => {
+  const registry = new Map();
+  const app = {
+    isPackaged: true,
+    getAppPath: () => '/app',
+    setLoginItemSettings: ({ name, path: executable, args, openAtLogin }) => {
+      if (openAtLogin) registry.set(name, `"${executable}" ${args.join(' ')}`);
+      else registry.delete(name);
+    }
   };
-  const settings = createAutostart(app, 'win32');
+  const queryValue = (keyPath, valueName) => {
+    if (keyPath.includes('StartupApproved')) throw new Error('REG: value not found');
+    const value = registry.get(valueName);
+    if (!value) throw new Error('REG: value not found');
+    return `${valueName}    REG_SZ    ${value}`;
+  };
+  const settings = createAutostart(app, 'win32', queryValue);
+  assert.equal(settings.get(), false);
   assert.equal(settings.set(true), true);
+  assert.equal(registry.get('Education Toolkit').includes(process.execPath), true);
   assert.equal(settings.set(false), false);
+});
+
+test('Windows autostart reports off while Task Manager keeps the entry disabled', () => {
+  const queryValue = (keyPath, valueName) => keyPath.includes('StartupApproved')
+    ? `${valueName}    REG_BINARY    030000000000000000000000`
+    : `${valueName}    REG_SZ    "${process.execPath}" --autostart`;
+  assert.equal(createAutostart(windowsApp(), 'win32', queryValue).get(), false);
+});
+
+test('Windows autostart ignores a run entry that points at another executable', () => {
+  const queryValue = (keyPath, valueName) => {
+    if (keyPath.includes('StartupApproved')) throw new Error('REG: value not found');
+    return `${valueName}    REG_SZ    "C:\\Other\\Tool.exe" --autostart`;
+  };
+  assert.equal(createAutostart(windowsApp(), 'win32', queryValue).get(), false);
+});
+
+test('Windows autostart stays off when the registry cannot be queried', () => {
+  const queryValue = () => { throw new Error('reg is unavailable'); };
+  assert.equal(createAutostart(windowsApp(), 'win32', queryValue).get(), false);
 });
 
 test('Linux startup checks disabled entries and removes only its own desktop entry', () => {

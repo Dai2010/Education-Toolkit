@@ -1,16 +1,58 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const { execFileSync } = require('node:child_process');
 
-module.exports = function createAutostart(app, platform = process.platform) {
-  // 修复：确保在打包后使用正确的执行路径
-  const execPath = app.isPackaged ? process.execPath : process.execPath;
+const entryName = 'Education Toolkit';
+const runKeyPath = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
+const approvedKeyPath = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run';
+
+// getLoginItemSettings 在 Windows 上不支持 name 选项（只有 set 支持），所以读的时候
+// 拿不到自己写进去的那个值名。这里直接查注册表，读写两侧共用 entryName。
+function queryRegistryValue(keyPath, valueName) {
+  const output = execFileSync('reg', ['query', keyPath, '/v', valueName], { encoding: 'utf8', windowsHide: true });
+  return output.split(/\r?\n/).map((line) => line.trim()).find((line) => line.startsWith(valueName)) || '';
+}
+
+function registryValue(line) {
+  const match = /(REG_[A-Z_]+)\s+(.*)$/.exec(line || '');
+  return match ? { type: match[1], data: match[2].trim() } : null;
+}
+
+function executableOf(commandLine) {
+  const quoted = /^"([^"]+)"/.exec(commandLine || '');
+  if (quoted) return quoted[1];
+  return (commandLine || '').split(/\s+/)[0] || '';
+}
+
+// 任务管理器禁用启动项只改 StartupApproved 的字节，不改 Run 的值；第一个字节 03 表示被禁用。
+// 读不到或形态不认识就按已启用处理，保持旧行为而不是误报未开启。
+function approvedDisabled(line) {
+  const value = registryValue(line);
+  if (!value || value.type !== 'REG_BINARY') return false;
+  return /^03/i.test(value.data.replace(/\s+/g, ''));
+}
+
+module.exports = function createAutostart(app, platform = process.platform, queryValue = queryRegistryValue) {
+  const execPath = process.execPath;
   const args = app.isPackaged ? ['--autostart'] : [app.getAppPath(), '--autostart'];
-  const options = { path: execPath, args, name: 'Education Toolkit', openAsHidden: false };
+  const options = { path: execPath, args, name: entryName, openAsHidden: false };
   const file = path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'autostart', 'education-toolkit.desktop');
   const quote = (value) => '"' + String(value).replace(/[\\"`$]/g, '\\$&') + '"';
   const command = [execPath, ...args].map(quote).join(' ');
-  
+
+  function getWindows() {
+    const registered = registryValue(queryValue(runKeyPath, entryName));
+    if (!registered) return false;
+    const expectedPath = path.win32.normalize(execPath).toLowerCase();
+    if (path.win32.normalize(executableOf(registered.data)).toLowerCase() !== expectedPath) return false;
+    try {
+      return !approvedDisabled(queryValue(approvedKeyPath, entryName));
+    } catch {
+      return true;
+    }
+  }
+
   function get() {
     if (platform === 'linux') {
       try {
@@ -21,14 +63,13 @@ module.exports = function createAutostart(app, platform = process.platform) {
     }
     // Windows 和 macOS
     try {
-      const settings = app.getLoginItemSettings(options);
-      return Boolean(settings.openAtLogin);
+      return getWindows();
     } catch (error) {
       console.error('Failed to read login item:', error);
       return false;
     }
   }
-  
+
   function set(enabled) {
     if (platform === 'linux') {
       if (enabled) {
@@ -49,7 +90,8 @@ module.exports = function createAutostart(app, platform = process.platform) {
     } else {
       // Windows 和 macOS
       try {
-        app.setLoginItemSettings({ ...options, openAtLogin: Boolean(enabled) });
+        // enabled 才是任务管理器里那个「启动已批准」开关，默认 true；关闭时要一起改掉。
+        app.setLoginItemSettings({ ...options, openAtLogin: Boolean(enabled), enabled: Boolean(enabled) });
       } catch (error) {
         console.error('Failed to set login item:', error);
         return false;
@@ -57,6 +99,6 @@ module.exports = function createAutostart(app, platform = process.platform) {
     }
     return get();
   }
-  
+
   return { get, set };
 };
