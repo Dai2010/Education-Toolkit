@@ -10,7 +10,14 @@ const approvedKeyPath = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Exp
 // getLoginItemSettings 在 Windows 上不支持 name 选项（只有 set 支持），所以读的时候
 // 拿不到自己写进去的那个值名。这里直接查注册表，读写两侧共用 entryName。
 function queryRegistryValue(keyPath, valueName) {
-  const output = execFileSync('reg', ['query', keyPath, '/v', valueName], { encoding: 'utf8', windowsHide: true });
+  let output;
+  try {
+    output = execFileSync('reg', ['query', keyPath, '/v', valueName], { encoding: 'utf8', windowsHide: true });
+  } catch (error) {
+    // reg 用退出码 1 表示「键或值不存在」，那是还没开启自启动的正常状态，不当错误刷日志。
+    if (error.status === 1 || error.status === 2) return '';
+    throw error;
+  }
   return output.split(/\r?\n/).map((line) => line.trim()).find((line) => line.startsWith(valueName)) || '';
 }
 

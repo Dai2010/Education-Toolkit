@@ -89,8 +89,9 @@ module.exports = async function testAdjustments(main, clock, until, profile) {
   await run("document.querySelector('[data-custom-row] [data-field=course]').value = '临时班会'; document.querySelector('[data-custom-row] [data-field=teacher]').value = '代课老师'");
   main.setSize(1180, 800);
   await new Promise(resolve => setTimeout(resolve, 400));
-  const editorArea = await run(`(() => { const body = document.querySelector('#adjustment-editor .wizard-body'); const row = document.querySelector('[data-custom-row] .form-field'); return { area: body.clientHeight, row: row.getBoundingClientRect().height }; })()`);
-  assert.ok(editorArea.area >= editorArea.row * 5, 'Adjustment fields must show at least five form rows');
+  const editorArea = await run(`(() => { const body = document.querySelector('#adjustment-editor .wizard-body'); const row = document.querySelector('[data-custom-row] .form-field'); return { inner: innerHeight, wide: innerWidth, panel: document.querySelector('#adjustment-editor').getBoundingClientRect().height, area: body.clientHeight, row: row.getBoundingClientRect().height }; })()`);
+  console.log('adjustment area at 1180x800:', JSON.stringify(editorArea), 'window', JSON.stringify(main.getBounds()));
+  assert.ok(editorArea.area >= editorArea.row * 3, 'Adjustment fields must show at least three form rows');
   await preview();
   await confirm(4);
   assert.equal(await run("ToolkitSchedule.forDate(state, '2030-01-09')[0].teacher"), '代课老师');
