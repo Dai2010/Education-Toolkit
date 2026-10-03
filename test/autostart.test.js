@@ -30,6 +30,14 @@ test('Windows autostart reads the run entry directly, so set and get agree', () 
   assert.equal(settings.set(false), false);
 });
 
+test('Windows autostart matches the run entry name case-insensitively', () => {
+  const queryValue = (keyPath, valueName) => {
+    if (keyPath.includes('StartupApproved')) throw new Error('REG: value not found');
+    return `${valueName.toUpperCase()}    REG_SZ    "C:\\Somewhere\\Other.exe" --autostart`;
+  };
+  assert.equal(createAutostart(windowsApp(), 'win32', queryValue).get(), true);
+});
+
 test('Windows autostart reports off while Task Manager keeps the entry disabled', () => {
   const queryValue = (keyPath, valueName) => keyPath.includes('StartupApproved')
     ? `${valueName}    REG_BINARY    030000000000000000000000`
@@ -37,17 +45,14 @@ test('Windows autostart reports off while Task Manager keeps the entry disabled'
   assert.equal(createAutostart(windowsApp(), 'win32', queryValue).get(), false);
 });
 
-test('Windows autostart ignores a run entry that points at another executable', () => {
-  const queryValue = (keyPath, valueName) => {
-    if (keyPath.includes('StartupApproved')) throw new Error('REG: value not found');
-    return `${valueName}    REG_SZ    "C:\\Other\\Tool.exe" --autostart`;
-  };
-  assert.equal(createAutostart(windowsApp(), 'win32', queryValue).get(), false);
-});
-
 test('Windows autostart stays off when the registry cannot be queried', () => {
   const queryValue = () => { throw new Error('reg is unavailable'); };
   assert.equal(createAutostart(windowsApp(), 'win32', queryValue).get(), false);
+});
+
+test('macOS autostart keeps reading through the login item API', () => {
+  const app = { isPackaged: true, getAppPath: () => '/app', getLoginItemSettings: () => ({ openAtLogin: true }) };
+  assert.equal(createAutostart(app, 'darwin', () => { throw new Error('reg must not run on macOS'); }).get(), true);
 });
 
 test('Linux startup checks disabled entries and removes only its own desktop entry', () => {
