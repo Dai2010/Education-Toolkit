@@ -209,7 +209,9 @@ app.whenReady().then(async () => {
     await require('./electron-adjustments.cjs')(main, clock, until, profile);
     assert.deepEqual(errors, []);
     console.log(`Electron UI verified: ${checks} lesson starts, all weekday tables, embedded clock, tools, settings, drag and watchdog.`);
-    app.quit();
+    // app.quit() 在 CI 上跑完不会让进程结束（步骤会一直挂着），这里清理掉临时 profile 后直接退出。
+    fs.rmSync(profile, { recursive: true, force: true });
+    app.exit(0);
   } catch (error) {
     console.error(error, errors);
     app.exit(1);
